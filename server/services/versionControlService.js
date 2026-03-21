@@ -26,10 +26,15 @@ const getProductHistory = async (productId, userRole) => {
     orderBy: { versionNumber: "desc" }
   });
 
+  const appliedEcoCount = await prisma.eCO.count({ 
+    where: { productId, status: "APPLIED" } 
+  });
+
   return {
     productId,
     productName: product.name,
     totalVersions: history.length,
+    appliedEcoCount,
     currentVersion: `v${product.currentVersion}`,
     history: history.map(v => ({
       versionNumber: v.versionNumber,
@@ -211,23 +216,23 @@ const createRollbackECO = async (productId, targetVersion, userId, reason) => {
       }
     });
 
-    // Recreate BOM Components
-    for (const comp of (targetBom?.components || [])) {
-      await tx.eCODraftChange.create({
-        data: {
-          ecoId: eco.id,
-          fieldName: "ADD",
-          recordType: "BOM_COMPONENT",
-          recordId: comp.componentName,
-          newValue: JSON.stringify({
-            componentName: comp.componentName,
-            quantity: comp.quantity,
-            makeOrBuy: comp.makeOrBuy,
-            supplier: comp.supplier,
-            unitCost: comp.unitCost
-          })
-        }
-      });
+    // Recreate BOM Components (Bulk Insert)
+    const compsToCreate = (targetBom?.components || []).map(comp => ({
+      ecoId: eco.id,
+      fieldName: "ADD",
+      recordType: "BOM_COMPONENT",
+      recordId: comp.componentName,
+      newValue: JSON.stringify({
+        componentName: comp.componentName,
+        quantity: comp.quantity,
+        makeOrBuy: comp.makeOrBuy,
+        supplier: comp.supplier,
+        unitCost: comp.unitCost
+      })
+    }));
+
+    if (compsToCreate.length > 0) {
+      await tx.eCODraftChange.createMany({ data: compsToCreate });
     }
 
     // Metadata changes

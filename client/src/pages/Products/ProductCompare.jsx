@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, GitCompare, Plus, Minus, RefreshCcw, ShieldAlert } from 'lucide-react';
+import { GitCompare, Plus, Minus, RefreshCcw, ShieldAlert } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import DiffTable from '../../components/DiffTable';
+import CustomSelect from '../../components/CustomSelect';
 
 const ProductCompare = () => {
   const { id } = useParams();
@@ -65,9 +67,7 @@ const ProductCompare = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">Compare Versions</h1>
           <p className="page-desc">Visualize differences between any two BOM versions</p>
         </div>
@@ -77,18 +77,22 @@ const ProductCompare = () => {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Base Version</label>
-            <select className="plm-select" value={fromVer} onChange={(e) => setFromVer(e.target.value)}>
-              {sortedHistory.map(v => <option key={v.versionNumber} value={v.versionNumber}>{v.label} ({v.ecoTitle})</option>)}
-            </select>
+            <CustomSelect 
+              value={fromVer} 
+              onChange={val => setFromVer(val)} 
+              options={sortedHistory.map(v => ({ value: v.versionNumber, label: `${v.label} (${v.ecoTitle || 'Initial Setup'})` }))}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', height: '44px', color: 'var(--text-dim)' }}>
             <GitCompare size={20} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Compare With</label>
-            <select className="plm-select" value={toVer} onChange={(e) => setToVer(e.target.value)}>
-              {[...sortedHistory].reverse().map(v => <option key={v.versionNumber} value={v.versionNumber}>{v.label} ({v.ecoTitle})</option>)}
-            </select>
+            <CustomSelect 
+              value={toVer} 
+              onChange={val => setToVer(val)} 
+              options={[...sortedHistory].reverse().map(v => ({ value: v.versionNumber, label: `${v.label} (${v.ecoTitle || 'Initial Setup'})` }))}
+            />
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, ArrowLeft, CheckCircle2, GitMerge, BarChart3, ShieldCheck, Zap } from 'lucide-react';
+import { Mail, CheckCircle2, GitMerge, BarChart3, ShieldCheck, Zap } from 'lucide-react';
+import BackButton from '../components/BackButton';
 import { useToast } from '../context/ToastContext';
 import api from '../api/api';
 
@@ -131,9 +132,7 @@ export default function ForgotPassword() {
           )}
 
           <div style={{ marginTop: '28px', textAlign: 'center' }}>
-            <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: brand, fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none' }}>
-              <ArrowLeft size={16} /> Back to Sign In
-            </Link>
+            <BackButton to="/login" label="Back to Sign In" />
           </div>
         </motion.div>
       </div>

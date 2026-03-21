@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Users, GitCommit, Search } from 'lucide-react';
+import { Clock, Users, GitCommit } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useToast } from '../../context/ToastContext';
 import VersionTimeline from '../../components/VersionTimeline';
 
@@ -35,9 +36,7 @@ const ProductHistory = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">Version History: {data.productName}</h1>
           <p className="page-desc">Complete audit trail of all applied Engineering Change Orders</p>
         </div>
@@ -60,7 +59,7 @@ const ProductHistory = () => {
           </div>
           <div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Applied ECOs</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{data.totalVersions - 1}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800 }}>{data.appliedEcoCount}</div>
           </div>
         </div>
         <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>

@@ -29,10 +29,10 @@ const DiffTable = ({ data, title }) => {
             </tr>
           </thead>
           <tbody>
-            {data.map((item, idx) => {
+            {data.map((item) => {
               const style = getStatusStyle(item.status);
               return (
-                <tr key={idx} style={{ backgroundColor: style.bg }}>
+                <tr key={item.name || item.field} style={{ backgroundColor: style.bg }}>
                   <td>{style.icon}</td>
                   <td><strong>{item.name || item.field}</strong></td>
                   <td style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: style.color }}>{item.status}</td>

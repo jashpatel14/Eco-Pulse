@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Search, Info, ShieldAlert, Lock } from 'lucide-react';
+import { User, Search, Info, ShieldAlert, Lock } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import BlameRow from '../../components/BlameRow';
@@ -53,9 +54,7 @@ const ProductBlame = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">Who Changed What (Git Blame)</h1>
           <p className="page-desc">Trace each BOM component and product field back to its origin ECO</p>
         </div>

@@ -8,6 +8,7 @@ import api from '../../api/api';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
 import LeadTimeBadge from '../../components/LeadTimeBadge';
+import CustomSelect from '../../components/CustomSelect';
 
 const ECO_STATUSES = ['','DRAFT','IN_REVIEW','APPROVED','REJECTED','APPLIED'];
 const RISK_LEVELS  = ['','HIGH','MEDIUM','LOW'];
@@ -89,21 +90,27 @@ export default function ECOList() {
           {/* Global search used instead of local input */}
           <div>
             <label>Status</label>
-            <select className="plm-select" value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-              {ECO_STATUSES.map(s => <option key={s} value={s}>{s || 'All'}</option>)}
-            </select>
+            <CustomSelect 
+              value={filters.status} 
+              onChange={val => setFilters(f => ({ ...f, status: val }))} 
+              options={ECO_STATUSES.map(s => ({ value: s, label: s || 'All' }))}
+            />
           </div>
           <div>
             <label>Risk</label>
-            <select className="plm-select" value={filters.riskLevel} onChange={e => setFilters(f => ({ ...f, riskLevel: e.target.value }))}>
-              {RISK_LEVELS.map(r => <option key={r} value={r}>{r || 'All'}</option>)}
-            </select>
+            <CustomSelect 
+              value={filters.riskLevel} 
+              onChange={val => setFilters(f => ({ ...f, riskLevel: val }))} 
+              options={RISK_LEVELS.map(r => ({ value: r, label: r || 'All' }))}
+            />
           </div>
           <div>
             <label>Type</label>
-            <select className="plm-select" value={filters.ecoType} onChange={e => setFilters(f => ({ ...f, ecoType: e.target.value }))}>
-              {ECO_TYPES.map(t => <option key={t} value={t}>{t || 'All'}</option>)}
-            </select>
+            <CustomSelect 
+              value={filters.ecoType} 
+              onChange={val => setFilters(f => ({ ...f, ecoType: val }))} 
+              options={ECO_TYPES.map(t => ({ value: t, label: t || 'All' }))}
+            />
           </div>
         </div>
       )}

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Package, ArrowLeft, Save } from 'lucide-react';
+import { Package, Save } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
 
@@ -106,9 +107,7 @@ export default function ECODraftProduct() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
-            <ArrowLeft size={16} /> Back to ECO
-          </button>
+          <BackButton label="Back to ECO" />
           <h1 className="page-title"><Package size={22} style={{ display:'inline', marginRight: 8 }} />Edit Product Draft</h1>
           <p className="page-desc">Drafting changes for ECO: {eco?.title}</p>
         </div>
@@ -119,11 +118,11 @@ export default function ECODraftProduct() {
           <div className="form-row">
             <div className="field-group">
               <label className="plm-label">Sale Price (₹)</label>
-              <input className="plm-input" name="salePrice" type="number" step="0.01" value={form.salePrice} onChange={handleChange} required />
+              <input className="plm-input" name="salePrice" type="number" step="0.01" min="0" value={form.salePrice} onChange={handleChange} required />
             </div>
             <div className="field-group">
               <label className="plm-label">Cost Price (₹)</label>
-              <input className="plm-input" name="costPrice" type="number" step="0.01" value={form.costPrice} onChange={handleChange} required />
+              <input className="plm-input" name="costPrice" type="number" step="0.01" min="0" value={form.costPrice} onChange={handleChange} required />
             </div>
           </div>
 

@@ -5,7 +5,10 @@ const prisma = require("../config/prisma");
 const logger = require("../utils/logger");
 const { sendResetPasswordEmail } = require("../utils/emailService");
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("FATAL: JWT_SECRET environment variable is not set. Server cannot start safely.");
+}
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h";
 
 const register = async (req, res) => {
@@ -92,9 +95,15 @@ const login = async (req, res) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+
     logger.info(`Successful login for user: ${user.loginId}`);
     res.json({
-      token,
       user: { id: user.id, name: user.name, role: user.role, email: user.email, loginId: user.loginId }
     });
   } catch (error) {
@@ -155,6 +164,8 @@ const deleteAccount = async (req, res) => {
       prisma.eCODraftChange.deleteMany({ where: { eco: { userId } } }),
       prisma.eCO.deleteMany({ where: { userId } }),
       prisma.auditLog.deleteMany({ where: { userId } }),
+      prisma.productVersion.updateMany({ where: { createdById: userId }, data: { createdById: null } }),
+      prisma.bOM.updateMany({ where: { createdById: userId }, data: { createdById: null } }),
       prisma.user.delete({ where: { id: userId } })
     ]);
     logger.info(`User account deleted: ${userId}`);
@@ -242,4 +253,14 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, changePassword, deleteAccount, forgotPassword, resetPassword };
+const logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict"
+  });
+  logger.info(`User logged out`);
+  res.json({ message: "Logout successful" });
+};
+
+module.exports = { register, login, logout, getProfile, changePassword, deleteAccount, forgotPassword, resetPassword };

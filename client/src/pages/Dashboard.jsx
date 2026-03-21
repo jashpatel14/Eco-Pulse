@@ -14,23 +14,25 @@ export default function Dashboard() {
     products: 0, boms: 0, ecos_total: 0,
     ecos_draft: 0, ecos_in_review: 0, ecos_applied: 0, ecos_rejected: 0
   });
+  const [recentEcos, setRecentEcos] = useState([]);
 
   useEffect(() => {
     Promise.all([
-      api.get('/products').catch(() => ({ data: [] })),
-      api.get('/boms').catch(() => ({ data: [] })),
-      api.get('/ecos').catch(() => ({ data: [] })),
-    ]).then(([prods, boms, ecos]) => {
-      const ecoData = ecos.data;
+      api.get('/stats'),
+      api.get('/ecos?take=5')
+    ]).then(([statsRes, ecosRes]) => {
       setStats({
-        products: prods.data.length,
-        boms: boms.data.length,
-        ecos_total: ecoData.length,
-        ecos_draft: ecoData.filter(e => e.status === 'DRAFT').length,
-        ecos_in_review: ecoData.filter(e => e.status === 'IN_REVIEW').length,
-        ecos_applied: ecoData.filter(e => e.status === 'APPLIED').length,
-        ecos_rejected: ecoData.filter(e => e.status === 'REJECTED').length,
+        products: statsRes.data.products,
+        boms: statsRes.data.boms,
+        ecos_total: statsRes.data.ecos.total,
+        ecos_draft: statsRes.data.ecos.DRAFT,
+        ecos_in_review: statsRes.data.ecos.IN_REVIEW,
+        ecos_applied: statsRes.data.ecos.APPLIED,
+        ecos_rejected: statsRes.data.ecos.REJECTED,
       });
+      setRecentEcos(ecosRes.data || []);
+    }).catch(err => {
+      console.error("Failed to load dashboard data", err);
     });
   }, []);
 
@@ -71,11 +73,11 @@ export default function Dashboard() {
   const cards = CARD_SETS[role] || CARD_SETS['USER'];
 
   const QUICK_ACTIONS = [
-    { label: 'New Product', onClick: () => navigate('/products/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
-    { label: 'New BOM', onClick: () => navigate('/boms/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
-    { label: 'View Reports', onClick: () => navigate('/reports'), roles: null, primary: false },
-    { label: 'Manage Settings', onClick: () => navigate('/settings'), roles: ['ADMIN'], primary: false },
-    { label: 'Audit Log', onClick: () => navigate('/audit'), roles: ['ADMIN'], primary: false },
+    { label: 'New Product', icon: Package, onClick: () => navigate('/products/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
+    { label: 'New BOM', icon: ClipboardList, onClick: () => navigate('/boms/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
+    { label: 'View Reports', icon: BarChart2, onClick: () => navigate('/reports'), roles: null, primary: false },
+    { label: 'Manage Settings', icon: Zap, onClick: () => navigate('/settings'), roles: ['ADMIN'], primary: false },
+    { label: 'System Audit Log', icon: ClipboardList, onClick: () => navigate('/audit'), roles: ['ADMIN'], primary: false },
   ].filter(a => !a.roles || a.roles.includes(role));
 
   return (
@@ -125,7 +127,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Quick Actions + Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 4, alignItems: 'start' }}>
         {/* Quick Actions */}
         <motion.div 
           className="glass-card" 
@@ -140,17 +142,19 @@ export default function Dashboard() {
             </div>
             <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>Quick Actions</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {QUICK_ACTIONS.map(a => (
               <motion.button 
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.01, x: 4 }}
                 whileTap={{ scale: 0.98 }}
                 key={a.label} 
-                className={a.primary ? 'btn-plm btn-sm' : 'btn-outline btn-sm'} 
+                className={a.primary ? 'btn-plm' : 'btn-outline'} 
                 onClick={a.onClick}
-                style={{ justifyContent: 'center' }}
+                style={{ justifyContent: 'flex-start', padding: '12px 16px', width: '100%', border: a.primary ? '' : '1px solid var(--border-light)' }}
               >
+                <a.icon size={18} style={{ marginRight: 12, opacity: 0.8 }} />
                 {a.label}
+                <ArrowRight size={14} style={{ marginLeft: 'auto', opacity: 0.5 }} />
               </motion.button>
             ))}
           </div>
@@ -232,6 +236,55 @@ export default function Dashboard() {
           </button>
         </motion.div>
       </div>
+
+      {/* Recent Activity Table */}
+      <motion.div 
+        className="glass-card" 
+        initial={{ opacity: 0, y: 12 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.4 }}
+        style={{ marginTop: 16 }}
+      >
+        <div className="section-title" style={{ marginBottom: 16 }}>Recent Engineering Change Orders</div>
+        <div className="table-wrap">
+          <table className="plm-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Target</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Created By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentEcos.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                    No ECOs found in the system.
+                  </td>
+                </tr>
+              ) : recentEcos.map(eco => (
+                <tr key={eco.id} onClick={() => navigate(`/ecos/${eco.id}`)} style={{ cursor: 'pointer' }}>
+                  <td><strong>{eco.reference}</strong></td>
+                  <td>{eco.product?.name || eco.bom?.reference}</td>
+                  <td>
+                    <span className={`status-badge ${eco.status === 'APPLIED' ? 'status-active' : eco.status === 'REJECTED' ? 'status-archived' : 'status-draft'}`}>
+                      {eco.status}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`priority-badge priority-${eco.priority?.toLowerCase() || 'medium'}`}>
+                      {eco.priority || 'MEDIUM'}
+                    </span>
+                  </td>
+                  <td className="text-dim">{eco.user?.name || 'Unknown'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
   );
 }

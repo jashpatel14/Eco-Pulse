@@ -54,7 +54,7 @@ router.get("/blame/:bomId", authMiddleware, async (req, res) => {
 router.post(
   "/rollback/:bomId",
   authMiddleware,
-  requireRole(["ADMIN", "ENGINEERING_USER"]),
+  requireRole("ADMIN", "ENGINEERING_USER"),
   async (req, res) => {
     try {
       const { targetVersion, reason } = req.body;

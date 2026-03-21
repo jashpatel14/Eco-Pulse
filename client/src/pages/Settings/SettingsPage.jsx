@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, Plus, Trash2, GripVertical } from 'lucide-react';
+import CustomSelect from '../../components/CustomSelect';
 import api from '../../api/api';
 import { useToast } from '../../context/ToastContext';
 
+import { useConfirm } from '../../context/ConfirmContext';
+
 export default function SettingsPage() {
   const { addToast } = useToast();
+  const { confirm } = useConfirm();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') || 'stages';
   
@@ -18,6 +22,8 @@ export default function SettingsPage() {
   const [newStage, setNewStage] = useState({ name: '', approvalRequired: false });
   const [newRule, setNewRule] = useState({ stageId: '', userId: '', approvalCategory: 'REQUIRED' });
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
 
   const fetchAll = async () => {
     const [stagesRes, rulesRes, usersRes] = await Promise.all([
@@ -31,8 +37,20 @@ export default function SettingsPage() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await api.get('/users', { params: { search: userSearch, take: 50 } });
+        setUsers(data);
+      } catch (err) {}
+    };
+    const timer = setTimeout(fetchUsers, 300);
+    return () => clearTimeout(timer);
+  }, [userSearch]);
+
   const addStage = async () => {
     if (!newStage.name.trim()) { addToast('Stage name is required.', 'error'); return; }
+    setIsSubmitting(true);
     try {
       await api.post('/stages', newStage);
       addToast('Stage created.', 'success');
@@ -40,22 +58,34 @@ export default function SettingsPage() {
       fetchAll();
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to create stage.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const deleteStage = async (id) => {
-    if (!window.confirm('Delete this stage?')) return;
+    const ok = await confirm({
+      title: 'Delete Stage?',
+      message: 'Are you sure you want to remove this stage? This cannot be undone.',
+      confirmText: 'Delete',
+      type: 'danger'
+    });
+    if (!ok) return;
+    setIsSubmitting(true);
     try {
       await api.delete(`/stages/${id}`);
       addToast('Stage deleted.', 'success');
       fetchAll();
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to delete stage.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const addRule = async () => {
     if (!newRule.stageId || !newRule.userId) { addToast('Stage and user are required.', 'error'); return; }
+    setIsSubmitting(true);
     try {
       await api.post('/approvals', newRule);
       addToast('Approval rule created.', 'success');
@@ -63,16 +93,21 @@ export default function SettingsPage() {
       fetchAll();
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to create rule.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const deleteRule = async (id) => {
+    setIsSubmitting(true);
     try {
       await api.delete(`/approvals/${id}`);
       addToast('Approval rule deleted.', 'success');
       fetchAll();
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to delete rule.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -108,8 +143,8 @@ export default function SettingsPage() {
                       <td>{s.approvalRequired ? <span style={{ color: 'var(--brand)' }}>✓ Yes</span> : <span className="text-muted">—</span>}</td>
                       <td>
                         {s.name !== 'New' && s.name !== 'Done' && (
-                          <button className="btn-danger btn-sm" onClick={() => deleteStage(s.id)}>
-                            <Trash2 size={12} />
+                          <button className="btn-icon btn-icon-danger" onClick={() => deleteStage(s.id)} disabled={isSubmitting} title="Delete Stage">
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </td>
@@ -129,16 +164,16 @@ export default function SettingsPage() {
               <div className="field-group" style={{ flex: 1 }}>
                 <label className="plm-label">Stage Name</label>
                 <input className="plm-input" placeholder="e.g. Engineering Review" value={newStage.name}
-                  onChange={e => setNewStage(prev => ({ ...prev, name: e.target.value }))} />
+                  onChange={e => setNewStage(prev => ({ ...prev, name: e.target.value }))} disabled={isSubmitting} />
               </div>
               <div style={{ paddingBottom: 2 }}>
                 <label className="checkbox-label">
                   <input type="checkbox" checked={newStage.approvalRequired}
-                    onChange={e => setNewStage(prev => ({ ...prev, approvalRequired: e.target.checked }))} />
+                    onChange={e => setNewStage(prev => ({ ...prev, approvalRequired: e.target.checked }))} disabled={isSubmitting} />
                   Requires designated approver
                 </label>
               </div>
-              <button className="btn-plm" onClick={addStage}><Plus size={16} /> Add Stage</button>
+              <button className="btn-plm" onClick={addStage} disabled={isSubmitting}><Plus size={16} /> Add Stage</button>
             </div>
           </motion.div>
         </>
@@ -157,7 +192,7 @@ export default function SettingsPage() {
                       <td><span className="chip">{r.stage?.name}</span></td>
                       <td>{r.user?.name} <span className="text-dim" style={{ fontSize: '0.78rem' }}>({r.user?.email})</span></td>
                       <td><span className={r.approvalCategory === 'REQUIRED' ? 'badge-in-review status-badge' : 'status-badge badge-draft'}>{r.approvalCategory}</span></td>
-                      <td><button className="btn-danger btn-sm" onClick={() => deleteRule(r.id)}><Trash2 size={12} /></button></td>
+                      <td><button className="btn-icon btn-icon-danger" onClick={() => deleteRule(r.id)} disabled={isSubmitting} title="Delete Rule"><Trash2 size={16} /></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -170,26 +205,42 @@ export default function SettingsPage() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div className="field-group" style={{ flex: 1 }}>
                 <label className="plm-label">Stage</label>
-                <select className="plm-select" value={newRule.stageId} onChange={e => setNewRule(p => ({ ...p, stageId: e.target.value }))}>
-                  <option value="">Select stage…</option>
-                  {stages.filter(s => s.approvalRequired).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <CustomSelect 
+                  value={newRule.stageId} 
+                  onChange={val => setNewRule(p => ({ ...p, stageId: val }))} 
+                  disabled={isSubmitting}
+                  placeholder="Select stage…"
+                  options={stages.filter(s => s.approvalRequired).map(s => ({ value: s.id, label: s.name }))}
+                />
               </div>
-              <div className="field-group" style={{ flex: 1 }}>
+              <div className="field-group" style={{ flex: 1.5 }}>
                 <label className="plm-label">Approver</label>
-                <select className="plm-select" value={newRule.userId} onChange={e => setNewRule(p => ({ ...p, userId: e.target.value }))}>
-                  <option value="">Select user…</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
-                </select>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="plm-input" placeholder="Search..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ width: '40%' }} disabled={isSubmitting} />
+                  <div style={{ width: '60%' }}>
+                    <CustomSelect 
+                      value={newRule.userId} 
+                      onChange={val => setNewRule(p => ({ ...p, userId: val }))} 
+                      disabled={isSubmitting}
+                      placeholder="Select user…"
+                      options={users.map(u => ({ value: u.id, label: `${u.name} (${u.role})` }))}
+                    />
+                  </div>
+                </div>
               </div>
               <div className="field-group">
                 <label className="plm-label">Category</label>
-                <select className="plm-select" value={newRule.approvalCategory} onChange={e => setNewRule(p => ({ ...p, approvalCategory: e.target.value }))}>
-                  <option value="REQUIRED">Required</option>
-                  <option value="OPTIONAL">Optional</option>
-                </select>
+                <CustomSelect 
+                  value={newRule.approvalCategory} 
+                  onChange={val => setNewRule(p => ({ ...p, approvalCategory: val }))} 
+                  disabled={isSubmitting}
+                  options={[
+                    { value: 'REQUIRED', label: 'Required' },
+                    { value: 'OPTIONAL', label: 'Optional' }
+                  ]}
+                />
               </div>
-              <button className="btn-plm" onClick={addRule}><Plus size={16} /> Add Rule</button>
+              <button className="btn-plm" onClick={addRule} disabled={isSubmitting}><Plus size={16} /> Add Rule</button>
             </div>
           </motion.div>
         </>

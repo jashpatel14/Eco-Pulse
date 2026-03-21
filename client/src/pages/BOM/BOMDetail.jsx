@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ClipboardList, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw } from 'lucide-react';
+import { ClipboardList, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw, Paperclip } from 'lucide-react';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
 import { useToast } from '../../context/ToastContext';
+import BackButton from '../../components/BackButton';
+import { getFileUrl } from '../../utils/fileUtils';
 
 export default function BOMDetail() {
   const { id } = useParams();
@@ -38,9 +40,7 @@ export default function BOMDetail() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">{bom.reference}</h1>
           <p className="page-desc">Bill of Materials Detail</p>
           <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
@@ -48,6 +48,34 @@ export default function BOMDetail() {
             <span className="plm-version-badge">v{bom.versionNumber}</span>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>• {bom.product?.name}</span>
           </div>
+          
+          {bom.attachments?.length > 0 && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+              {bom.attachments.map((att, i) => (
+                <a 
+                  key={i} 
+                  href={getFileUrl(att)} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="chip" 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px', 
+                    padding: '4px 10px',
+                    fontSize: '0.75rem',
+                    textDecoration: 'none',
+                    color: 'var(--brand-deep)',
+                    background: 'white',
+                    border: '1px solid var(--border-light)'
+                  }}
+                >
+                  <Paperclip size={12} />
+                  <span>{att.split('/').pop().replace(/^\d+-[\da-f]+-/, '')}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
         <div className="page-actions">
           {canRaiseECO && (
@@ -64,7 +92,7 @@ export default function BOMDetail() {
       </div>
 
       <div className="tab-bar">
-        {[['components','Components'],['operations','Operations'],['vcs','Version Control']].map(([key,label]) => (
+        {[['components','Components'],['operations','Operations'],['vcs','Version History & Control']].map(([key,label]) => (
           <button key={key} className={`tab-btn ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
@@ -147,6 +175,29 @@ export default function BOMDetail() {
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Restore a previous BOM state</p>
               </div>
             )}
+          </div>
+
+          <div className="section-title" style={{ marginTop: '32px' }}>All Versions</div>
+          <div className="glass-card">
+            <div className="table-wrap">
+              <table className="plm-table">
+                <thead>
+                  <tr><th>Version</th><th>Status</th><th>Created</th></tr>
+                </thead>
+                <tbody>
+                  {(bom.product?.boms || []).map(v => (
+                    <tr key={v.id} style={{ cursor: 'pointer', backgroundColor: v.id === bom.id ? 'var(--bg-card)' : 'transparent' }} onClick={() => navigate(`/boms/${v.id}`)}>
+                      <td>
+                        <span className="plm-version-badge">v{v.versionNumber}</span>
+                        {v.id === bom.id && <span className="chip" style={{ marginLeft: 8 }}>Current</span>}
+                      </td>
+                      <td><StatusBadge status={v.status} /></td>
+                      <td className="text-dim">{new Date(v.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Users, GitCommit } from 'lucide-react';
+import { Clock, History } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useToast } from '../../context/ToastContext';
 import VersionTimeline from '../../components/VersionTimeline';
 
@@ -27,9 +28,7 @@ const BOMHistory = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">BOM Version History</h1>
           <p className="page-desc">Complete audit trail of all BOM Engineering Change Orders</p>
         </div>

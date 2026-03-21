@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertTriangle, GitMerge, BarChart3, ShieldCheck, Zap } from 'lucide-react';
+import BackButton from '../components/BackButton';
 import { useToast } from '../context/ToastContext';
 import api from '../api/api';
 
@@ -156,9 +157,7 @@ export default function ResetPassword() {
           )}
 
           {!done && (
-            <div style={{ marginTop: '28px', textAlign: 'center' }}>
-              <Link to="/login" style={{ color: brand, fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none' }}>Back to Sign In</Link>
-            </div>
+              <BackButton to="/login" label="Back to Sign In" />
           )}
         </motion.div>
       </div>

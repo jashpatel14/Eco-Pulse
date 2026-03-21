@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Play, CheckCircle, XCircle, ChevronRight, SkipForward } from 'lucide-react';
+import { Play, CheckCircle, XCircle, ChevronRight, SkipForward, Paperclip } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -10,6 +11,7 @@ import RiskBadge from '../../components/RiskBadge';
 import ECOStageBar from '../../components/ECOStageBar';
 import LeadTimeBadge from '../../components/LeadTimeBadge';
 import DiffView from './DiffView';
+import { getFileUrl } from '../../utils/fileUtils';
 
 export default function ECODetail() {
   const { id } = useParams();
@@ -86,9 +88,7 @@ export default function ECODetail() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">{eco.title}</h1>
           <p className="page-desc">Engineering Change Order Detail</p>
         </div>
@@ -126,12 +126,16 @@ export default function ECODetail() {
                <button className="btn-plm" onClick={() => navigate(`/ecos/new?id=${id}`)}>
                    Edit Info
                </button>
-               <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-product`)}>
-                  Edit Product
-               </button>
-               <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-bom`)}>
-                  Edit BOM
-               </button>
+               {eco.ecoType === 'PRODUCT' && (
+                 <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-product`)}>
+                    Edit Product
+                 </button>
+               )}
+               {eco.ecoType === 'BOM' && (
+                 <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-bom`)}>
+                    Edit BOM
+                 </button>
+               )}
             </>
           )}
           
@@ -158,6 +162,17 @@ export default function ECODetail() {
         </div>
 
         <div className="plm-form">
+          <div className="form-row">
+            <div className="field-group">
+              <label className="plm-label">Reference</label>
+              <div style={{ fontWeight: 700, color: 'var(--brand-deep)', fontSize: '1.1rem' }}>{eco.reference || '—'}</div>
+            </div>
+            <div className="field-group">
+              <label className="plm-label">Priority</label>
+              <RiskBadge risk={eco.priority || 'MEDIUM'} />
+            </div>
+          </div>
+
           <div className="field-group">
             <label className="plm-label">Title <span className="req">*</span></label>
             <input className="plm-input" readOnly value={eco.title} />
@@ -198,6 +213,36 @@ export default function ECODetail() {
               </div>
             </div>
           </div>
+
+          {eco.attachments?.length > 0 && (
+            <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
+              <label className="plm-label">Attachments</label>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {eco.attachments.map((att, i) => (
+                  <a 
+                    key={i} 
+                    href={getFileUrl(att)} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="chip" 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: '8px 16px',
+                      textDecoration: 'none',
+                      color: 'var(--brand-deep)',
+                      background: 'white',
+                      border: '1px solid var(--border-light)'
+                    }}
+                  >
+                    <Paperclip size={14} />
+                    <span style={{ fontWeight: 500 }}>{att.split('/').pop().replace(/^\d+-[\da-f]+-/, '')}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 

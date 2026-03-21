@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw } from 'lucide-react';
+import { Package, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw, Paperclip } from 'lucide-react';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
 import { useToast } from '../../context/ToastContext';
+import BackButton from '../../components/BackButton';
+import { getFileUrl } from '../../utils/fileUtils';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -39,15 +41,15 @@ export default function ProductDetail() {
   if (loading) return <div className="plm-page"><div className="empty-state"><div className="spinner"></div></div></div>;
   if (!product) return null;
 
-  const margin = (((parseFloat(product.salePrice) - parseFloat(product.costPrice)) / parseFloat(product.salePrice)) * 100).toFixed(1);
+  const margin = parseFloat(product.salePrice) > 0 
+    ? (((parseFloat(product.salePrice) - parseFloat(product.costPrice)) / parseFloat(product.salePrice)) * 100).toFixed(1) 
+    : parseFloat(0).toFixed(1);
 
   return (
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">{product.name}</h1>
           <p className="page-desc">Product Master Record</p>
         </div>
@@ -68,7 +70,7 @@ export default function ProductDetail() {
       <div className="tab-bar">
         {['info', 'vcs'].map(t => (
           <button key={t} className={`tab-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t === 'info' ? 'Product Info' : 'Version Control'}
+            {t === 'info' ? 'Product Info' : 'Version History & Control'}
           </button>
         ))}
       </div>
@@ -99,9 +101,29 @@ export default function ProductDetail() {
           {product.attachments?.length > 0 && (
             <>
               <div className="section-title" style={{ marginTop: 24 }}>Attachments</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {product.attachments.map((att, i) => (
-                  <a key={i} href={att} target="_blank" rel="noreferrer" className="chip">{att.split('/').pop()}</a>
+                  <a 
+                    key={i} 
+                    href={getFileUrl(att)} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="chip" 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      padding: '8px 16px',
+                      textDecoration: 'none',
+                      color: 'var(--brand-deep)',
+                      background: 'white',
+                      border: '1px solid var(--border-light)',
+                      transition: 'all var(--ts)'
+                    }}
+                  >
+                    <Paperclip size={14} />
+                    <span style={{ fontWeight: 500 }}>{att.split('/').pop().replace(/^\d+-[\da-f]+-/, '')}</span>
+                  </a>
                 ))}
               </div>
             </>
@@ -142,7 +164,7 @@ export default function ProductDetail() {
             )}
           </div>
 
-          <div className="section-title" style={{ marginTop: '32px' }}>Quick View: Recent Versions</div>
+          <div className="section-title" style={{ marginTop: '32px' }}>All Versions</div>
           <div className="glass-card">
             <div className="table-wrap">
               <table className="plm-table">

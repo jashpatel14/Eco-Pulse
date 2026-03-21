@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Trash2, Save } from 'lucide-react';
+import BackButton from '../../components/BackButton';
+import CustomSelect from '../../components/CustomSelect';
 import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
+import StatusBadge from '../../components/StatusBadge';
+import FileUpload from '../../components/FileUpload';
 
-const emptyComp = () => ({ componentName: '', quantity: '', makeOrBuy: 'BUY', supplier: '', unitCost: '' });
-const emptyOp   = () => ({ operationName: '', durationMins: '', workCenter: '' });
+const emptyComp = () => ({ id: crypto.randomUUID(), componentName: '', quantity: '', makeOrBuy: 'BUY', supplier: '', unitCost: '' });
+const emptyOp   = () => ({ id: crypto.randomUUID(), operationName: '', durationMins: '', workCenter: '' });
 
 export default function BOMForm() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { addToast } = useToast();
   const [products, setProducts] = useState([]);
   const [productId, setProductId] = useState('');
+  const [attachments, setAttachments] = useState([]);
   const [components, setComponents] = useState([emptyComp()]);
   const [operations, setOperations] = useState([emptyOp()]);
   const [loading, setLoading] = useState(false);
@@ -35,9 +41,7 @@ export default function BOMForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      const validComps = components.filter(c => c.componentName && c.quantity);
-      const validOps   = operations.filter(o => o.operationName && o.durationMins && o.workCenter);
-      const { data } = await api.post('/boms', { productId, components: validComps, operations: validOps });
+      const { data } = await api.post('/boms', { productId, components, operations, attachments });
       addToast('BOM created successfully!', 'success');
       navigate(`/boms/${data.id}`);
     } catch (err) {
@@ -51,69 +55,73 @@ export default function BOMForm() {
     <div className="plm-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)}>
-            <ArrowLeft size={16} /> Back
-          </button>
-          <div style={{ 
-            border: '2px dashed var(--border-light)', 
-            padding: '4px 12px', 
-            borderRadius: '4px',
-            fontSize: '1rem',
-            fontWeight: 600,
-            color: 'var(--text-muted)'
-          }}>
+          <BackButton />
+          <div className="chip" style={{ padding: '6px 16px', fontSize: '0.9rem', fontWeight: 700, borderStyle: 'dashed', borderColor: 'var(--brand)' }}>
             BOM-XXXXXX
           </div>
         </div>
 
-        <button onClick={handleSubmit} className="btn-plm" disabled={loading || !productId} style={{ backgroundColor: 'var(--brand)' }}>
+        <button type="submit" form="bom-form" className="btn-plm" disabled={loading || !productId} style={{ backgroundColor: 'var(--brand)' }}>
           <Save size={16} /> {loading ? 'Saving…' : 'Save'}
         </button>
       </div>
 
       <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <form onSubmit={handleSubmit} className="plm-form">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <form id="bom-form" onSubmit={handleSubmit} className="plm-form">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div className="field-group">
               <label className="plm-label">Finished Product <span className="req">*</span></label>
-              <select className="plm-select" value={productId} onChange={e => setProductId(e.target.value)} required>
-                <option value="">Select Finished Product...</option>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <CustomSelect 
+                value={productId} 
+                onChange={val => setProductId(val)} 
+                placeholder="Select Finished Product..."
+                options={products.map(p => ({ value: p.id, label: p.name }))}
+              />
             </div>
 
             <div className="field-group">
               <label className="plm-label">Reference</label>
-              <input className="plm-input" placeholder="Max 8 chars" maxLength={8} readOnly value="Auto-gen" />
+              <input className="plm-input" placeholder="Max 8 chars" maxLength={8} readOnly value="Auto-generated" style={{ opacity: 0.7 }} />
             </div>
 
             <div className="field-group">
-              <label className="plm-label">Quantity</label>
+              <label className="plm-label">Batch Quantity</label>
               <input className="plm-input" type="number" step="0.01" defaultValue={1} />
             </div>
 
             <div className="field-group">
-              <label className="plm-label">Units</label>
-              <select className="plm-select">
-                <option>Units</option>
-                <option>kg</option>
-                <option>m</option>
-                <option>L</option>
-              </select>
+              <label className="plm-label">Unit of Measure</label>
+              <CustomSelect 
+                value="Units"
+                onChange={() => {}} 
+                options={[
+                  { value: 'Units', label: 'Units' },
+                  { value: 'kg', label: 'kg' },
+                  { value: 'm', label: 'm' },
+                  { value: 'L', label: 'L' }
+                ]}
+              />
             </div>
 
-            <div className="field-group" style={{ gridColumn: 'span 2' }}>
-              <label className="plm-label">Version</label>
-              <div style={{ 
-                backgroundColor: '#1e1e1e', 
-                color: 'white', 
-                padding: '8px 12px', 
-                borderRadius: '4px',
-                fontWeight: 600
-              }}>
-                1
+            <div className="field-group">
+              <label className="plm-label">Initial Version</label>
+              <div style={{ padding: '2px 0' }}>
+                <span className="plm-version-badge" style={{ fontSize: '0.9rem', padding: '4px 12px' }}>v1.0</span>
               </div>
             </div>
+
+            <div className="field-group">
+              <label className="plm-label">Initial Status</label>
+              <StatusBadge status="ACTIVE" />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-light)' }}>
+            <FileUpload 
+              label="BOM Attachments (Drawings, Specs)" 
+              value={attachments} 
+              onChange={setAttachments} 
+            />
           </div>
 
           <div className="tab-bar">
@@ -127,24 +135,32 @@ export default function BOMForm() {
 
           {tab === 'components' && (
             <>
-              <div style={{ marginBottom: '12px', fontWeight: 600, fontSize: '0.9rem', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr' }}>
+              <div style={{ marginBottom: '12px', fontWeight: 600, fontSize: '0.9rem', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.5fr 1fr' }}>
                 <span>Components</span>
                 <span>To consume</span>
                 <span>Units</span>
+                <span>Supplier</span>
+                <span>Unit Cost (₹)</span>
               </div>
               {components.map((c, i) => (
-                <div key={i} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 32px' }}>
+                <div key={c.id || crypto.randomUUID()} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 1.5fr 1fr 32px' }}>
                   <input className="plm-input" placeholder="Product..." value={c.componentName} onChange={e => updateComp(i,'componentName',e.target.value)} />
                   <input className="plm-input" type="number" placeholder="0" value={c.quantity} onChange={e => updateComp(i,'quantity',e.target.value)} />
-                  <select className="plm-select">
-                    <option>Units</option>
-                    <option>kg</option>
-                  </select>
+                  <CustomSelect 
+                    value="Units"
+                    onChange={() => {}} 
+                    options={[
+                      { value: 'Units', label: 'Units' },
+                      { value: 'kg', label: 'kg' }
+                    ]}
+                  />
+                  <input className="plm-input" placeholder="Supplier..." value={c.supplier || ''} onChange={e => updateComp(i,'supplier',e.target.value)} />
+                  <input className="plm-input" type="number" step="0.01" placeholder="₹0.00" value={c.unitCost || ''} onChange={e => updateComp(i,'unitCost',e.target.value)} />
                   <button type="button" className="row-del-btn" onClick={() => removeComp(i)}><Trash2 size={14} /></button>
                 </div>
               ))}
-              <button type="button" className="add-row-btn" onClick={() => setComponents(prev => [...prev, emptyComp()])} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                Add a product
+              <button type="button" className="btn-outline btn-sm" onClick={() => setComponents(prev => [...prev, emptyComp()])} style={{ marginTop: '12px' }}>
+                <Plus size={16} /> Add a product
               </button>
             </>
           )}
@@ -157,15 +173,15 @@ export default function BOMForm() {
                 <span>Expected Duration</span>
               </div>
               {operations.map((o, i) => (
-                <div key={i} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 2fr 32px' }}>
+                <div key={o.id || crypto.randomUUID()} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 2fr 32px' }}>
                   <input className="plm-input" placeholder="Operation..." value={o.operationName} onChange={e => updateOp(i,'operationName',e.target.value)} />
                   <input className="plm-input" placeholder="Work Center..." value={o.workCenter} onChange={e => updateOp(i,'workCenter',e.target.value)} />
                   <input className="plm-input" placeholder="Duration..." value={o.durationMins} onChange={e => updateOp(i,'durationMins',e.target.value)} />
                   <button type="button" className="row-del-btn" onClick={() => removeOp(i)}><Trash2 size={14} /></button>
                 </div>
               ))}
-              <button type="button" className="add-row-btn" onClick={() => setOperations(prev => [...prev, emptyOp()])} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                Add a line
+              <button type="button" className="btn-outline btn-sm" onClick={() => setOperations(prev => [...prev, emptyOp()])} style={{ marginTop: '12px' }}>
+                <Plus size={16} /> Add a line
               </button>
             </>
           )}

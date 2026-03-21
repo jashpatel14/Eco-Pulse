@@ -1,23 +1,24 @@
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../config/prisma");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
-const WRITE_ROLES = ["ADMIN"]; // Direct edit ONLY for Admin
+const BOM_ROLES = ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER", "ADMIN"];
+const WRITE_ROLES = ["ADMIN", "ENGINEERING_USER"]; // Direct edit for Admin and Engineering
 
 async function generateBomReference() {
-  const count = await prisma.bOM.count();
-  return `BOM-${String(count + 1).padStart(4, "0")}`;
+  return `BOM-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
 // GET /api/v1/boms
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, requireRole(...BOM_ROLES), async (req, res) => {
   try {
     const isOpsUser = req.user.role === "OPERATIONS_USER";
     const where = isOpsUser ? { status: "ACTIVE" } : {};
-    const { search, productId } = req.query;
+    const { search, productId, take = 50, skip = 0 } = req.query;
     if (productId) where.productId = productId;
     if (search) {
       where.product = { name: { contains: search, mode: "insensitive" } };
@@ -27,6 +28,8 @@ router.get("/", authMiddleware, async (req, res) => {
       where,
       include: { product: { select: { name: true } } },
       orderBy: { created_at: "desc" },
+      take: parseInt(take),
+      skip: parseInt(skip),
     });
     res.json(boms);
   } catch (err) {
@@ -38,7 +41,7 @@ router.get("/", authMiddleware, async (req, res) => {
 // POST /api/v1/boms
 router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) => {
   try {
-    const { productId, components = [], operations = [], reference } = req.body;
+    const { productId, components = [], operations = [], reference, attachments = [] } = req.body;
     if (!productId) return res.status(400).json({ message: "productId is required." });
 
     const product = await prisma.product.findUnique({ where: { id: productId } });
@@ -48,40 +51,45 @@ router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) =
 
     const ref = reference || await generateBomReference();
 
-    const bom = await prisma.bOM.create({
-      data: {
-        reference: ref,
-        productId,
-        versionNumber: 1,
-        status: "ACTIVE",
-        components: {
-          create: components.map((c) => ({
-            componentName: c.componentName,
-            quantity: parseFloat(c.quantity),
-            makeOrBuy: c.makeOrBuy || "BUY",
-            supplier: c.supplier || null,
-            unitCost: c.unitCost ? parseFloat(c.unitCost) : null,
-          })),
+    const bom = await prisma.$transaction(async (tx) => {
+      const createdBom = await tx.bOM.create({
+        data: {
+          reference: ref,
+          productId,
+          versionNumber: 1,
+          status: "ACTIVE",
+          attachments: attachments || [],
+          components: {
+            create: components.map((c) => ({
+              componentName: c.componentName,
+              quantity: parseFloat(c.quantity),
+              makeOrBuy: c.makeOrBuy || "BUY",
+              supplier: c.supplier || null,
+              unitCost: c.unitCost ? parseFloat(c.unitCost) : null,
+            })),
+          },
+          operations: {
+            create: operations.map((o) => ({
+              operationName: o.operationName,
+              durationMins: parseInt(o.durationMins),
+              workCenter: o.workCenter,
+            })),
+          },
         },
-        operations: {
-          create: operations.map((o) => ({
-            operationName: o.operationName,
-            durationMins: parseInt(o.durationMins),
-            workCenter: o.workCenter,
-          })),
-        },
-      },
-      include: { components: true, operations: true, product: true },
-    });
+        include: { components: true, operations: true, product: true },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "BOM_CREATED",
-        recordType: "BOM",
-        recordId: bom.id,
-        newValue: JSON.stringify({ reference: ref, productId }),
-        userId: req.user.id,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: "BOM_CREATED",
+          recordType: "BOM",
+          recordId: createdBom.id,
+          newValue: JSON.stringify({ reference: ref, productId }),
+          userId: req.user.id,
+        },
+      });
+
+      return createdBom;
     });
 
     res.status(201).json(bom);
@@ -92,7 +100,7 @@ router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) =
 });
 
 // GET /api/v1/boms/:id
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", authMiddleware, requireRole(...BOM_ROLES), async (req, res) => {
   try {
     const bom = await prisma.bOM.findUnique({
       where: { id: req.params.id },

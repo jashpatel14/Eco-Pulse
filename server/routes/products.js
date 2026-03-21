@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 const prisma = require("../config/prisma");
 const { authMiddleware } = require("../middleware/authMiddleware");
@@ -6,20 +7,19 @@ const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
 const PRODUCT_ROLES = ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER", "ADMIN"];
-const WRITE_ROLES = ["ADMIN"]; // Direct edit ONLY for Admin as per spec
+const WRITE_ROLES = ["ENGINEERING_USER", "ADMIN"]; // Synchronized with frontend canCreate
 
-// Auto-generate product reference like PROD-000001
+// Auto-generate product reference (using random hex to avoid race conditions)
 async function generateProductReference() {
-  const count = await prisma.product.count();
-  return `PROD-${String(count + 1).padStart(6, "0")}`;
+  return `PROD-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
 // GET /api/v1/products
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, requireRole(...PRODUCT_ROLES), async (req, res) => {
   try {
     const isOpsUser = req.user.role === "OPERATIONS_USER";
     const where = isOpsUser ? { status: "ACTIVE" } : {};
-    const { search } = req.query;
+    const { search, take = 50, skip = 0 } = req.query;
     if (search) {
       where.name = { contains: search, mode: "insensitive" };
     }
@@ -27,6 +27,8 @@ router.get("/", authMiddleware, async (req, res) => {
     const products = await prisma.product.findMany({
       where,
       orderBy: { updated_at: "desc" },
+      take: parseInt(take),
+      skip: parseInt(skip),
     });
     res.json(products);
   } catch (err) {
@@ -42,13 +44,16 @@ router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) =
     if (!name || !salePrice || !costPrice) {
       return res.status(400).json({ message: "Name, salePrice, and costPrice are required." });
     }
+    if (parseFloat(salePrice) < 0 || parseFloat(costPrice) < 0) {
+      return res.status(400).json({ message: "Prices cannot be negative." });
+    }
 
     const product = await prisma.product.create({
       data: {
         name,
         salePrice: parseFloat(salePrice),
         costPrice: parseFloat(costPrice),
-        attachments,
+        attachments: attachments || [],
         currentVersion: 1,
         status: "ACTIVE",
         versions: {
@@ -56,7 +61,7 @@ router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) =
             versionNumber: 1,
             salePrice: parseFloat(salePrice),
             costPrice: parseFloat(costPrice),
-            attachments,
+            attachments: attachments || [],
             status: "ACTIVE",
           },
         },
@@ -86,7 +91,7 @@ router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) =
 });
 
 // GET /api/v1/products/:id
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", authMiddleware, requireRole(...PRODUCT_ROLES), async (req, res) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: req.params.id },
@@ -109,17 +114,20 @@ router.get("/:id", authMiddleware, async (req, res) => {
 // PATCH /api/v1/products/:id/archive
 router.patch("/:id/archive", authMiddleware, requireRole("ADMIN"), async (req, res) => {
   try {
-    const product = await prisma.product.update({
-      where: { id: req.params.id },
-      data: { status: "ARCHIVED" },
-    });
-    await prisma.auditLog.create({
-      data: {
-        action: "PRODUCT_ARCHIVED",
-        recordType: "PRODUCT",
-        recordId: product.id,
-        userId: req.user.id,
-      },
+    const product = await prisma.$transaction(async (tx) => {
+      const updatedProduct = await tx.product.update({
+        where: { id: req.params.id },
+        data: { status: "ARCHIVED" },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: "PRODUCT_ARCHIVED",
+          recordType: "PRODUCT",
+          recordId: updatedProduct.id,
+          userId: req.user.id,
+        },
+      });
+      return updatedProduct;
     });
     res.json(product);
   } catch (err) {

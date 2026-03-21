@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Info, ShieldAlert, Lock } from 'lucide-react';
+import { Info, ShieldAlert, Lock, UserCheck, HelpCircle } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import BlameRow from '../../components/BlameRow';
@@ -45,9 +46,7 @@ const BOMBlame = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">BOM Blame — Who Changed What</h1>
           <p className="page-desc">Trace each component and operation back to its origin ECO</p>
         </div>
@@ -69,7 +68,7 @@ const BOMBlame = () => {
         <>
           <div className="section-title">BOM Components</div>
           <div className="glass-card" style={{ overflow: 'hidden', marginBottom: '32px' }}>
-            {data.components.map((c, i) => <BlameRow key={i} data={c} />)}
+            {data.components.map(c => <BlameRow key={c.componentName || crypto.randomUUID()} data={c} />)}
           </div>
         </>
       )}
@@ -78,7 +77,7 @@ const BOMBlame = () => {
         <>
           <div className="section-title">Manufacturing Operations</div>
           <div className="glass-card" style={{ overflow: 'hidden' }}>
-            {data.operations.map((o, i) => <BlameRow key={i} data={o} />)}
+            {data.operations.map(o => <BlameRow key={o.componentName || crypto.randomUUID()} data={o} />)}
           </div>
         </>
       )}

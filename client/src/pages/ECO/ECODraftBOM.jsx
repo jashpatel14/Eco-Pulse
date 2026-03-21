@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { FileText, Save, Plus, Trash2 } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
+import CustomSelect from '../../components/CustomSelect';
 
 export default function ECODraftBOM() {
   const { id } = useParams();
@@ -152,9 +154,7 @@ export default function ECODraftBOM() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
-            <ArrowLeft size={16} /> Back to ECO
-          </button>
+          <BackButton label="Back to ECO" />
           <h1 className="page-title"><FileText size={22} style={{ display:'inline', marginRight: 8 }} />Edit BOM Draft</h1>
           <p className="page-desc">Drafting changes for ECO: {eco?.title}</p>
         </div>
@@ -165,18 +165,24 @@ export default function ECODraftBOM() {
           <div className="section-title">Components</div>
           <div className="table-wrap" style={{ marginBottom: 24 }}>
             <table className="plm-table">
-              <thead><tr><th>Name</th><th>Quantity</th><th>Make/Buy</th><th>Action</th></tr></thead>
+              <thead><tr><th>Name</th><th>Quantity</th><th>Make/Buy</th><th>Supplier</th><th>Unit Cost (₹)</th><th>Action</th></tr></thead>
               <tbody>
                 {components.map((c, idx) => (
                   <tr key={c._id}>
                     <td><input className="plm-input" value={c.componentName || ''} onChange={e => handleCompChange(idx, 'componentName', e.target.value)} required placeholder="e.g. Screw" /></td>
                     <td><input className="plm-input" type="number" step="0.01" value={c.quantity || ''} onChange={e => handleCompChange(idx, 'quantity', e.target.value)} required /></td>
                     <td>
-                      <select className="plm-input" value={c.makeOrBuy || 'BUY'} onChange={e => handleCompChange(idx, 'makeOrBuy', e.target.value)}>
-                        <option value="BUY">Buy</option>
-                        <option value="MAKE">Make</option>
-                      </select>
+                      <CustomSelect 
+                        value={c.makeOrBuy || 'BUY'} 
+                        onChange={val => handleCompChange(idx, 'makeOrBuy', val)}
+                        options={[
+                          { value: 'BUY', label: 'Buy' },
+                          { value: 'MAKE', label: 'Make' }
+                        ]}
+                      />
                     </td>
+                    <td><input className="plm-input" placeholder="Supplier..." value={c.supplier || ''} onChange={e => handleCompChange(idx, 'supplier', e.target.value)} /></td>
+                    <td><input className="plm-input" type="number" step="0.01" placeholder="₹0.00" value={c.unitCost || ''} onChange={e => handleCompChange(idx, 'unitCost', e.target.value)} /></td>
                     <td><button type="button" className="btn-icon" style={{ color: 'var(--status-danger)' }} onClick={() => setComponents(components.filter((_, i) => i !== idx))}><Trash2 size={16}/></button></td>
                   </tr>
                 ))}

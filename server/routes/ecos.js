@@ -8,6 +8,11 @@ const { applyECO } = require("../services/ecoApplyService");
 const logger = require("../utils/logger");
 
 const ECO_WRITE_ROLES = ["ENGINEERING_USER", "ADMIN"];
+const crypto = require("crypto");
+
+async function generateEcoReference() {
+  return `ECO-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+}
 
 const ECO_INCLUDE = {
   product: { select: { id: true, name: true, currentVersion: true } },
@@ -15,17 +20,21 @@ const ECO_INCLUDE = {
   user: { select: { id: true, name: true, email: true } },
   stage: { include: { approval_rules: { include: { user: { select: { id: true, name: true } } } } } },
   draftChanges: true,
+  attachments: true,
 };
 
 // GET /api/v1/ecos
 router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "OPERATIONS_USER", "ADMIN"), async (req, res) => {
   try {
-    const { status, ecoType, riskLevel, changeReason, userId, search } = req.query;
+    const { status, ecoType, riskLevel, changeReason, userId, search, take = 50, skip = 0 } = req.query;
     const isOpsUser = req.user.role === "OPERATIONS_USER";
 
     const where = {};
-    if (isOpsUser) where.status = { notIn: ["DRAFT", "ARCHIVED"] };
-    if (status) where.status = status;
+    if (isOpsUser) {
+      where.status = { notIn: ["DRAFT", "ARCHIVED"] };
+    } else if (status) {
+      where.status = status;
+    }
     if (ecoType) where.ecoType = ecoType;
     if (riskLevel) where.riskLevel = riskLevel;
     if (changeReason) where.changeReason = changeReason;
@@ -39,6 +48,8 @@ router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "OPE
 
     const ecos = await prisma.eCO.findMany({
       where,
+      take: parseInt(take),
+      skip: parseInt(skip),
       include: {
         product: { select: { id: true, name: true } },
         user: { select: { id: true, name: true } },
@@ -56,7 +67,7 @@ router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "OPE
 // POST /api/v1/ecos
 router.post("/", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, res) => {
   try {
-    const { title, ecoType, productId, bomId, effectiveDate, changeReason, riskLevel, versionUpdate = true } = req.body;
+    const { title, ecoType, productId, bomId, effectiveDate, changeReason, riskLevel, priority, versionUpdate = true, attachments = [] } = req.body;
     if (!title || !ecoType || !productId || !changeReason || !riskLevel) {
       return res.status(400).json({ message: "title, ecoType, productId, changeReason, and riskLevel are required." });
     }
@@ -69,31 +80,39 @@ router.post("/", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, re
     const newStage = await prisma.eCOStage.findFirst({ orderBy: { orderIndex: "asc" } });
     if (!newStage) return res.status(500).json({ message: "No ECO stages configured." });
 
-    const eco = await prisma.eCO.create({
-      data: {
-        title,
-        ecoType,
-        productId,
-        bomId: bomId || null,
-        userId: req.user.id,
-        effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
-        versionUpdate,
-        stageId: newStage.id,
-        changeReason,
-        riskLevel,
-        status: "DRAFT",
-      },
-      include: ECO_INCLUDE,
-    });
+    const eco = await prisma.$transaction(async (tx) => {
+      const ref = await generateEcoReference();
+      const createdEco = await tx.eCO.create({
+        data: {
+          reference: ref,
+          title,
+          ecoType,
+          productId,
+          bomId: bomId || null,
+          userId: req.user.id,
+          effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
+          versionUpdate,
+          stageId: newStage.id,
+          changeReason,
+          riskLevel,
+          priority: priority || "MEDIUM",
+          attachments: attachments || [],
+          status: "DRAFT",
+        },
+        include: ECO_INCLUDE,
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "ECO_CREATED",
-        recordType: "ECO",
-        recordId: eco.id,
-        newValue: JSON.stringify({ title, ecoType, productId }),
-        userId: req.user.id,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: "ECO_CREATED",
+          recordType: "ECO",
+          recordId: createdEco.id,
+          newValue: JSON.stringify({ title, ecoType, productId }),
+          userId: req.user.id,
+        },
+      });
+
+      return createdEco;
     });
 
     res.status(201).json(eco);
@@ -106,7 +125,7 @@ router.post("/", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, re
 // PATCH /api/v1/ecos/:id — Update main details (only in DRAFT)
 router.patch("/:id", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, res) => {
   try {
-    const { title, effectiveDate, changeReason, riskLevel, versionUpdate } = req.body;
+    const { title, effectiveDate, changeReason, riskLevel, priority, versionUpdate, attachments } = req.body;
     const eco = await prisma.eCO.findUnique({ where: { id: req.params.id } });
 
     if (!eco) return res.status(404).json({ message: "ECO not found." });
@@ -124,7 +143,9 @@ router.patch("/:id", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req
         effectiveDate: effectiveDate ? new Date(effectiveDate) : undefined,
         changeReason: changeReason || undefined,
         riskLevel: riskLevel || undefined,
+        priority: priority || undefined,
         versionUpdate: versionUpdate !== undefined ? versionUpdate : undefined,
+        attachments: attachments || undefined,
       },
       include: ECO_INCLUDE,
     });
@@ -194,20 +215,23 @@ router.patch("/:id/start", authMiddleware, requireRole("ENGINEERING_USER", "ADMI
     const newStage = stages[0];
     const nextStage = stages.length > 1 ? stages[1] : stages[0];
 
-    const updated = await prisma.eCO.update({
-      where: { id: req.params.id },
-      data: { status: "IN_REVIEW", stageId: nextStage.id },
-      include: ECO_INCLUDE,
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      const e = await tx.eCO.update({
+        where: { id: req.params.id },
+        data: { status: "IN_REVIEW", stageId: nextStage.id },
+        include: ECO_INCLUDE,
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "ECO_STARTED",
-        recordType: "ECO",
-        recordId: eco.id,
-        newValue: `ECO moved to stage: ${nextStage.name}`,
-        userId: req.user.id,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: "ECO_STARTED",
+          recordType: "ECO",
+          recordId: e.id,
+          newValue: `ECO moved to stage: ${nextStage.name}`,
+          userId: req.user.id,
+        },
+      });
+      return e;
     });
 
     // Notify approvers if stage requires approval
@@ -216,13 +240,13 @@ router.patch("/:id/start", authMiddleware, requireRole("ENGINEERING_USER", "ADMI
         where: { stageId: nextStage.id },
         include: { user: { select: { id: true } } },
       });
-      for (const rule of rules) {
-        await createNotification(
+      await Promise.all(rules.map(rule => 
+        createNotification(
           rule.user.id,
           `ECO "${eco.title}" requires your approval in stage "${nextStage.name}".`,
           `/ecos/${eco.id}`
-        );
-      }
+        )
+      ));
     }
 
     res.json(updated);
@@ -252,7 +276,33 @@ router.post("/:id/approve", authMiddleware, requireRole("APPROVER", "ADMIN"), as
     const currentIdx = stages.findIndex((s) => s.id === eco.stageId);
     const nextStage = stages[currentIdx + 1];
 
-    if (!nextStage) {
+    // Log the individual approval
+    await prisma.auditLog.create({
+      data: {
+        action: "ECO_APPROVED_BY_USER",
+        recordType: "ECO",
+        recordId: eco.id,
+        newValue: `Approved stage: ${eco.stage.name}`,
+        userId: req.user.id,
+      },
+    });
+
+    // Check consensus
+    const requiredApprovers = eco.stage.approval_rules.length;
+    const approvals = await prisma.auditLog.count({
+      where: {
+        recordType: "ECO",
+        recordId: eco.id,
+        action: "ECO_APPROVED_BY_USER",
+        newValue: `Approved stage: ${eco.stage.name}`,
+      },
+    });
+
+    if (approvals < requiredApprovers) {
+      return res.json({ ...eco, status: "IN_REVIEW", message: `Approval recorded. Waiting for ${requiredApprovers - approvals} more approvers.` });
+    }
+
+    if (!nextStage || nextStage.name === "Done") {
       // Final stage — apply ECO
       await applyECO(eco.id);
       const applied = await prisma.eCO.findUnique({ where: { id: eco.id }, include: ECO_INCLUDE });
@@ -287,22 +337,16 @@ router.post("/:id/approve", authMiddleware, requireRole("APPROVER", "ADMIN"), as
       const rules = await prisma.eCOApprovalRule.findMany({
         where: { stageId: nextStage.id },
       });
-      for (const rule of rules) {
-        await createNotification(rule.userId, `ECO "${eco.title}" requires your approval in stage "${nextStage.name}".`, `/ecos/${eco.id}`);
-      }
+      await Promise.all(rules.map(rule => 
+        createNotification(rule.userId, `ECO "${eco.title}" requires your approval in stage "${nextStage.name}".`, `/ecos/${eco.id}`)
+      ));
     }
 
-    // If final stage is Done, apply the ECO
-    if (nextStage.name === "Done") {
-      await applyECO(eco.id);
-      const applied = await prisma.eCO.findUnique({ where: { id: eco.id }, include: ECO_INCLUDE });
-      return res.json(applied);
-    }
 
     res.json(updated);
   } catch (err) {
     logger.error("POST /ecos/:id/approve error:", err);
-    res.status(500).json({ message: "Failed to approve ECO: " + err.message, stack: err.stack });
+    res.status(500).json({ message: "Failed to approve ECO: " + err.message });
   }
 });
 
@@ -328,19 +372,21 @@ router.post("/:id/reject", authMiddleware, requireRole("APPROVER", "ADMIN"), asy
     const stages = await prisma.eCOStage.findMany({ orderBy: { orderIndex: "asc" } });
     const firstStage = stages[0];
 
-    await prisma.eCO.update({
-      where: { id: eco.id },
-      data: { status: "DRAFT", stageId: firstStage.id },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.eCO.update({
+        where: { id: eco.id },
+        data: { status: "DRAFT", stageId: firstStage.id },
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "ECO_REJECTED",
-        recordType: "ECO",
-        recordId: eco.id,
-        newValue: reason,
-        userId: req.user.id,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: "ECO_REJECTED",
+          recordType: "ECO",
+          recordId: eco.id,
+          newValue: reason,
+          userId: req.user.id,
+        },
+      });
     });
 
     await createNotification(
@@ -379,21 +425,25 @@ router.post("/:id/validate", authMiddleware, requireRole("ENGINEERING_USER", "AD
       return res.json(applied);
     }
 
-    const updated = await prisma.eCO.update({
-      where: { id: eco.id },
-      data: { stageId: nextStage.id },
-      include: ECO_INCLUDE,
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      const e = await tx.eCO.update({
+        where: { id: eco.id },
+        data: { stageId: nextStage.id },
+        include: ECO_INCLUDE,
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "ECO_VALIDATED",
-        recordType: "ECO",
-        recordId: eco.id,
-        oldValue: eco.stage.name,
-        newValue: nextStage.name,
-        userId: req.user.id,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: "ECO_VALIDATED",
+          recordType: "ECO",
+          recordId: e.id,
+          oldValue: eco.stage.name,
+          newValue: nextStage.name,
+          userId: req.user.id,
+        },
+      });
+      
+      return e;
     });
 
     await createNotification(eco.userId, `Your ECO "${eco.title}" has been validated and moved to "${nextStage.name}".`, `/ecos/${eco.id}`);
@@ -411,14 +461,19 @@ router.patch("/:id/changes", authMiddleware, requireRole("ENGINEERING_USER", "AD
     const eco = await prisma.eCO.findUnique({ where: { id: req.params.id } });
     if (!eco) return res.status(404).json({ message: "ECO not found." });
     if (eco.status !== "DRAFT") return res.status(400).json({ message: "Cannot modify a non-DRAFT ECO." });
+    if (eco.userId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Only the creator or an admin can edit this ECO's drafts." });
+    }
 
     // Delete old draft changes and replace
-    await prisma.eCODraftChange.deleteMany({ where: { ecoId: eco.id } });
-    if (changes && changes.length > 0) {
-      await prisma.eCODraftChange.createMany({
-        data: changes.map((c) => ({ ...c, ecoId: eco.id })),
-      });
-    }
+    await prisma.$transaction([
+      prisma.eCODraftChange.deleteMany({ where: { ecoId: eco.id } }),
+      ...(changes && changes.length > 0 ? [
+        prisma.eCODraftChange.createMany({
+          data: changes.map((c) => ({ ...c, ecoId: eco.id })),
+        })
+      ] : [])
+    ]);
     const updatedChanges = await prisma.eCODraftChange.findMany({ where: { ecoId: eco.id } });
     res.json(updatedChanges);
   } catch (err) {

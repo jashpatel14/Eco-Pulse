@@ -180,11 +180,40 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-light);
-  background: white; color: var(--text-muted);
-  cursor: pointer; transition: all var(--transition-fast);
+  border: 1.5px solid var(--border-medium);
+  background: white; color: var(--text-dim);
+  cursor: pointer; transition: all var(--ts);
+  box-shadow: var(--shadow-xs);
 }
-.btn-icon:hover { background: var(--bg-hover); border-color: var(--brand); color: var(--brand); }
+.btn-icon:hover { 
+  background: var(--brand-soft); 
+  border-color: var(--brand); 
+  color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-icon-danger:hover {
+  background: #fff1f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.btn-back-modern {
+  border: 1px solid var(--border-medium) !important;
+  box-shadow: var(--shadow-sm) !important;
+  background: white !important;
+  color: var(--text-main) !important;
+  border-radius: 99px !important;
+  transition: all var(--ts) !important;
+}
+
+.btn-back-modern:hover {
+  background: var(--brand-soft) !important;
+  border-color: var(--brand) !important;
+  color: var(--brand-deep) !important;
+  box-shadow: var(--shadow-md) !important;
+}
 
 /* ═══════════════════════════════════════════════════
    SIDEBAR
@@ -382,6 +411,24 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
 .badge-approved  { background: hsla(150, 80%, 95%, 1); color: #065f46; border: 1px solid hsla(150, 80%, 90%, 1); }
 .badge-rejected  { background: hsla(0, 100%, 97%, 1); color: #991b1b; border: 1px solid hsla(0, 100%, 92%, 1); }
 .badge-applied   { background: var(--brand-glow); color: var(--brand-deep); border: 1px solid var(--brand); }
+ 
+ /* ─── ECO Priority Badges ────────────────────────── */
+ .priority-badge {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   padding: 4px 12px;
+   border-radius: 99px;
+   font-size: 0.7rem;
+   font-weight: 700;
+   text-transform: uppercase;
+   letter-spacing: 0.03em;
+   border: 1px solid transparent;
+ }
+ .priority-low      { background: hsla(150, 80%, 96%, 1); color: #065f46; border-color: hsla(150, 80%, 90%, 1); }
+ .priority-medium   { background: hsla(215, 100%, 96%, 1); color: #1e40af; border-color: hsla(215, 100%, 92%, 1); }
+ .priority-high     { background: hsla(35, 100%, 96%, 1); color: #92400e; border-color: hsla(35, 100%, 90%, 1); }
+ .priority-critical { background: hsla(0, 100%, 97%, 1); color: #991b1b; border-color: hsla(0, 100%, 92%, 1); }
 
 /* ─── ECO Type Badges ────────────────────────────── */
 .eco-type-bom, .eco-type-product {

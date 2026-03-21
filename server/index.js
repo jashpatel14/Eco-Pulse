@@ -2,6 +2,7 @@ process.env.DEBUG = "";
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const path = require("path");
 const { securityHeaders } = require("./middleware/securityMiddleware");
 require("dotenv").config();
 
@@ -15,12 +16,16 @@ const reportRoutes = require("./routes/reports");
 const auditRoutes = require("./routes/audit");
 const notificationRoutes = require("./routes/notifications");
 const userRoutes = require("./routes/users");
+const uploadRoutes = require("./routes/upload");
 const logger = require("./utils/logger");
 const prisma = require("./config/prisma");
 const redisClient = require("./config/redis");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Static serve for uploads
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const whitelist = process.env.CORS_WHITELIST
   ? process.env.CORS_WHITELIST.split(",")
@@ -52,6 +57,7 @@ app.use(cookieParser());
 
 const versionControlRoutes = require("./routes/versionControl");
 const bomVersionControlRoutes = require("./routes/bomVersionControl");
+const statsRoutes = require("./routes/stats");
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
@@ -60,11 +66,14 @@ app.use("/api/v1/stages", stageRoutes);
 app.use("/api/v1/approvals", approvalRoutes);
 app.use("/api/v1/ecos", ecoRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/stats", statsRoutes);
 app.use("/api/v1/audit", auditRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/version-control", versionControlRoutes);
 app.use("/api/v1/bom-vc", bomVersionControlRoutes);
+
+app.use("/api/v1/upload", uploadRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
@@ -74,7 +83,7 @@ app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
   logger.error("Unhandled error:", err);
   res.status(500).json({ message: "Internal server error" });
 });

@@ -196,22 +196,22 @@ const createBOMRollback = async (bomId, targetVersion, userId, reason) => {
       }
     });
 
-    for (const comp of targetBom.components) {
-      await tx.eCODraftChange.create({
-        data: {
-          ecoId: eco.id,
-          fieldName: "ADD",
-          recordType: "BOM_COMPONENT",
-          recordId: comp.componentName,
-          newValue: JSON.stringify({
-            componentName: comp.componentName,
-            quantity: comp.quantity,
-            makeOrBuy: comp.makeOrBuy,
-            supplier: comp.supplier,
-            unitCost: comp.unitCost
-          })
-        }
-      });
+    const draftChanges = targetBom.components.map(comp => ({
+      ecoId: eco.id,
+      fieldName: "ADD",
+      recordType: "BOM_COMPONENT",
+      recordId: comp.componentName,
+      newValue: JSON.stringify({
+        componentName: comp.componentName,
+        quantity: comp.quantity,
+        makeOrBuy: comp.makeOrBuy,
+        supplier: comp.supplier,
+        unitCost: comp.unitCost
+      })
+    }));
+
+    if (draftChanges.length > 0) {
+      await tx.eCODraftChange.createMany({ data: draftChanges });
     }
 
     return eco;

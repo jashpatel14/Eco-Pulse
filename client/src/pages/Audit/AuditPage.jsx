@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Shield } from 'lucide-react';
+import CustomSelect from '../../components/CustomSelect';
 import api from '../../api/api';
 import { useToast } from '../../context/ToastContext';
 
@@ -47,12 +48,13 @@ export default function AuditPage() {
       </div>
 
       <div className="filter-panel">
-        <div>
+        <div style={{ minWidth: 200 }}>
           <label>Record Type</label>
-          <select className="plm-select" value={filters.recordType}
-            onChange={e => setFilters(f => ({ ...f, recordType: e.target.value }))}>
-            {RECORD_TYPES.map(r => <option key={r} value={r}>{r || 'All'}</option>)}
-          </select>
+          <CustomSelect 
+            value={filters.recordType} 
+            onChange={val => setFilters(f => ({ ...f, recordType: val }))} 
+            options={RECORD_TYPES.map(r => ({ value: r, label: r || 'All' }))}
+          />
         </div>
         <div>
           <label>From Date</label>

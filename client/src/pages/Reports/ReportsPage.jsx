@@ -1,85 +1,73 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart2, Download, Search, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart2, Download, Search, TrendingUp, PieChart as PieIcon, List } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, LineChart, Line, Legend 
+} from 'recharts';
 import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
+import CustomSelect from '../../components/CustomSelect';
 
 const TABS = ['eco-summary', 'matrix', 'product-history', 'bom-history'];
 const TAB_LABELS = { 
-  'eco-summary': 'ECO Change Report', 
+  'eco-summary': 'ECO Analytics', 
   'matrix': 'Product-BOM Matrix',
-  'product-history': 'Product Version History',
-  'bom-history': 'BoM Change History'
+  'product-history': 'Price Trends',
+  'bom-history': 'Change Logs'
 };
 
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
 export default function ReportsPage() {
-// track current view to switch content
-const [tab, setTab] = useState('eco-summary');
-// holds results from backend api
-const [data, setData] = useState(null);
-// show spinner while network is busy
-const [loading, setLoading] = useState(false);
-// list for the dropdown filter
-const [products, setProducts] = useState([]);
-// choice for history report filter
-const [selectedProductId, setSelectedProductId] = useState('');
-// list for the other dropdown filter
-const [boms, setBoms] = useState([]);
-// choice for history report filter
-const [selectedBomId, setSelectedBomId] = useState('');
-const { addToast } = useToast();
+  const [tab, setTab] = useState('eco-summary');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [boms, setBoms] = useState([]);
+  const [selectedBomId, setSelectedBomId] = useState('');
+  const { addToast } = useToast();
 
   useEffect(() => {
     api.get('/products').then(r => setProducts(r.data));
     api.get('/boms').then(r => setBoms(r.data));
   }, []);
 
-// grab data whenever tab or filters change
   const fetchData = async () => {
-    // start loading state immediately
     setLoading(true);
     try {
-      // build path based on current tab
       let url = `/reports/${tab}`;
-      // add specific id for history reports
       if (tab === 'product-history' && selectedProductId) {
         url = `/reports/product-history/${selectedProductId}`;
-      // add specific id for history reports
       } else if (tab === 'bom-history' && selectedBomId) {
         url = `/reports/bom-history/${selectedBomId}`;
-      // stop if user hasn't picked an id yet
       } else if (tab === 'product-history' || tab === 'bom-history') {
         const type = tab === 'product-history' ? 'Product' : 'BOM';
-        addToast(`Please select a ${type} to generate the history report.`, 'warning');
-        // clear old results
+        addToast(`Please select a ${type} to generate the report.`, 'warning');
         setData(null);
-        // turn off loader
         setLoading(false);
-        // skip network call
         return;
       }
 
-      // ask server for report data
       const res = await api.get(url);
-      // save results to local state
       setData(res.data);
     } catch (err) {
-      // log failure for debugging
-      console.error(err);
-      addToast('Failed to generate report. Please try again.', 'error');
-      // reset data if request fails
+      addToast('Failed to generate report.', 'error');
       setData(null);
     } finally {
-      // always stop loading spinner
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [tab, selectedProductId, selectedBomId]);
+    setData(null);
+    if (tab === 'eco-summary' || tab === 'matrix') {
+      fetchData();
+    }
+  }, [tab]);
 
   const exportCSV = () => {
     const exportData = data?.ecos || data?.versions || data || [];
@@ -92,12 +80,51 @@ const { addToast } = useToast();
     URL.revokeObjectURL(url);
   };
 
+  // --- Chart Data Preparation ---
+  const getEcoStatusData = () => {
+    if (!data?.stats) return [];
+    return [
+      { name: 'Draft', value: data.stats.draft || 0 },
+      { name: 'In Review', value: data.stats.inReview || 0 },
+      { name: 'Applied', value: data.stats.applied || 0 },
+    ].filter(d => d.value > 0);
+  };
+
+  const getEcoStageData = () => {
+    if (!data?.ecos) return [];
+    const stages = {};
+    data.ecos.forEach(eco => {
+      const sName = eco.stage?.name || 'Unknown';
+      stages[sName] = (stages[sName] || 0) + 1;
+    });
+    return Object.keys(stages).map(name => ({ name, count: stages[name] }));
+  };
+
+  const getPriceTrendData = () => {
+    if (!data?.versions) return [];
+    return [...data.versions].reverse().map(v => ({
+      version: `v${v.versionNumber}`,
+      salePrice: parseFloat(v.salePrice || 0),
+      costPrice: parseFloat(v.costPrice || 0),
+    }));
+  };
+
+  const getBomActionData = () => {
+    if (!Array.isArray(data)) return [];
+    const actions = {};
+    data.forEach(log => {
+      const a = log.action?.split('_')[0] || 'ACTION';
+      actions[a] = (actions[a] || 0) + 1;
+    });
+    return Object.keys(actions).map(name => ({ name, count: actions[name] }));
+  };
+
   return (
     <div className="plm-page">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title">Reporting</h1>
-          <p className="page-desc">Comprehensive system reports and audit trails</p>
+          <h1 className="page-title">Advanced Reporting</h1>
+          <p className="page-desc">Data-driven insights and interactive PLM analytics</p>
         </div>
         <button className="btn-outline btn-sm" onClick={exportCSV} disabled={!data}>
           <Download size={16} /> Export CSV
@@ -112,141 +139,166 @@ const { addToast } = useToast();
         ))}
       </div>
 
-      {(tab === 'product-history' || tab === 'bom-history') && (
-        <div className="glass-card" style={{ marginBottom: 20, padding: '16px 24px' }}>
-          <div className="form-row" style={{ alignItems: 'flex-end', gap: 16 }}>
-            {tab === 'product-history' ? (
-              <div className="field-group" style={{ marginBottom: 0 }}>
-                <label className="plm-label">Select Product</label>
-                <select className="plm-select" value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
-                  <option value="">Choose a product...</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-            ) : (
-              <div className="field-group" style={{ marginBottom: 0 }}>
-                <label className="plm-label">Select BOM Reference</label>
-                <select className="plm-select" value={selectedBomId} onChange={e => setSelectedBomId(e.target.value)}>
-                  <option value="">Choose a BOM...</option>
-                  {boms.map(b => <option key={b.id} value={b.id}>{b.reference} (v{b.versionNumber})</option>)}
-                </select>
-              </div>
-            )}
-            <button className="btn-plm" onClick={fetchData} style={{ height: 42 }}>
-              <Search size={18} /> Generate Report
-            </button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {(tab === 'product-history' || tab === 'bom-history') && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="glass-card" style={{ marginBottom: 20, padding: '16px 24px' }}
+          >
+            <div className="form-row" style={{ alignItems: 'flex-end', gap: 16 }}>
+              {tab === 'product-history' ? (
+                <div className="field-group" style={{ marginBottom: 0, minWidth: 260 }}>
+                  <label className="plm-label">Select Product</label>
+                  <CustomSelect 
+                    value={selectedProductId} 
+                    onChange={val => setSelectedProductId(val)} 
+                    placeholder="Choose a product..."
+                    options={products.map(p => ({ value: p.id, label: p.name }))}
+                  />
+                </div>
+              ) : (
+                <div className="field-group" style={{ marginBottom: 0, minWidth: 260 }}>
+                  <label className="plm-label">Select BOM Reference</label>
+                  <CustomSelect 
+                    value={selectedBomId} 
+                    onChange={val => setSelectedBomId(val)} 
+                    placeholder="Choose a BOM..."
+                    options={boms.map(b => ({ value: b.id, label: `${b.reference} (v${b.versionNumber})` }))}
+                  />
+                </div>
+              )}
+              <button className="btn-plm" onClick={fetchData} style={{ height: 46 }}>
+                <Search size={18} /> Generate Analytics
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="glass-card">
+      <div className="glass-card" style={{ minHeight: '400px' }}>
         {loading ? (
           <div className="empty-state"><div className="spinner"></div></div>
         ) : !data ? (
           <div className="empty-state">
-            <BarChart2 size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
-            <p>Select parameters above to generate report.</p>
+            <BarChart2 size={48} style={{ opacity: 0.1, marginBottom: 16 }} />
+            <p>Configure and generate the report to view analytics.</p>
           </div>
         ) : (
-          <motion.div className="table-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {tab === 'eco-summary' && data?.ecos && (
-              <>
-                {/* show high level totals */}
-                <div style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
-                   <div className="stat-pill"><strong>Total:</strong> {data.stats?.total || 0}</div>
-                   <div className="stat-pill"><strong>Draft:</strong> {data.stats?.draft || 0}</div>
-                   <div className="stat-pill"><strong>In Review:</strong> {data.stats?.inReview || 0}</div>
-                   <div className="stat-pill"><strong>Applied:</strong> {data.stats?.applied || 0}</div>
-                </div>
-                {/* detailed list of changes */}
-                <table className="plm-table">
-                  <thead><tr><th>Title</th><th>Product</th><th>Status</th><th>Stage</th><th>By</th><th>Changes</th><th>Created</th></tr></thead>
-                  <tbody>
-                    {/* render each eco from list */}
-                    {data.ecos.map(eco => (
-                      <tr key={eco.id}>
-                        <td>{eco.title}</td>
-                        {/* show linked product name */}
-                        <td>{eco.product?.name}</td>
-                        {/* visual color bubble for status */}
-                        <td><StatusBadge status={eco.status} /></td>
-                        {/* current process step */}
-                        <td><span className="chip">{eco.stage?.name}</span></td>
-                        {/* person who made it */}
-                        <td>{eco.user?.name}</td>
-                        {/* count of parts affected */}
-                        <td>{eco._count?.draftChanges || 0}</td>
-                        {/* readable creation date */}
-                        <td className="text-dim">{new Date(eco.created_at).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </>
-            )}
-
-            {tab === 'matrix' && Array.isArray(data) && (
-              <table className="plm-table">
-                <thead><tr><th>Product Name</th><th>Current Version</th><th>Active BOM</th><th>BOM Version</th><th>Components</th></tr></thead>
-                <tbody>
-                  {/* iterate through product matrix data */}
-                  {data.map(row => (
-                    <tr key={row.productId}>
-                      {/* bold product name for clarity */}
-                      <td><strong>{row.productName}</strong></td>
-                      {/* display current release version */}
-                      <td><span className="plm-version-badge">v{row.currentVersion}</span></td>
-                      {/* show name of the manufacturing bill */}
-                      <td>{row.activeBOM?.reference || '—'}</td>
-                      {/* show which version of the bill is used */}
-                      <td>{row.activeBOM ? row.activeBOM.versionNumber : '—'}</td>
-                      {/* total count of parts in this bill */}
-                      <td>{row.activeBOM?.components?.length || 0} items</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            {tab === 'product-history' && data?.versions && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+            
+            {/* --- ECO ANALYTICS TAB --- */}
+            {tab === 'eco-summary' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-                <div>
-                  <h3 style={{ marginBottom: 16, fontSize: '1.1rem' }}>Version Timeline</h3>
+                <div className="report-grid">
+                  <div className="chart-container">
+                    <h4 className="chart-title"><PieIcon size={16} /> Status Distribution</h4>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie data={getEcoStatusData()} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                          {getEcoStatusData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="bottom" height={36}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="chart-container">
+                    <h4 className="chart-title"><BarChart2 size={16} /> ECO Velocity by Stage</h4>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={getEcoStageData()}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" fontSize={11} stroke="#94a3b8" axisLine={false} tickLine={false} />
+                        <YAxis fontSize={11} stroke="#94a3b8" axisLine={false} tickLine={false} />
+                        <Tooltip cursor={{fill: '#f8fafc'}} />
+                        <Bar dataKey="count" fill="var(--brand)" radius={[4, 4, 0, 0]} barSize={40} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="table-wrap">
+                  <h4 className="chart-title"><List size={16} /> Recent Changes Details</h4>
+                  <table className="plm-table" style={{ marginTop: 12 }}>
+                    <thead><tr><th>Title</th><th>Product</th><th>Status</th><th>By</th><th>Created</th></tr></thead>
+                    <tbody>
+                      {Array.isArray(data?.ecos) && data.ecos.map(eco => (
+                        <tr key={eco.id}>
+                          <td><strong>{eco.title}</strong></td>
+                          <td>{eco.product?.name}</td>
+                          <td><StatusBadge status={eco.status} /></td>
+                          <td>{eco.user?.name}</td>
+                          <td className="text-dim">{new Date(eco.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* --- PRODUCT PRICE TRENDS TAB --- */}
+            {tab === 'product-history' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                <div className="chart-container" style={{ width: '100%' }}>
+                  <h4 className="chart-title"><TrendingUp size={16} /> Selling Price vs. Mfg Cost Over Time</h4>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={getPriceTrendData()}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="version" stroke="#94a3b8" fontSize={12} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={12} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="salePrice" name="Sale Price" stroke="#10b981" strokeWidth={3} dot={{ r: 6, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="costPrice" name="Mfg Cost" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="table-wrap">
                   <table className="plm-table">
                     <thead><tr><th>Version</th><th>Sale Price</th><th>Cost Price</th><th>Status</th><th>Created On</th></tr></thead>
                     <tbody>
-                      {/* list every historical release of product */}
-                      {data.versions.map(v => (
+                      {Array.isArray(data?.versions) && data.versions.map(v => (
                         <tr key={v.id}>
                           <td><span className="plm-version-badge">v{v.versionNumber}</span></td>
-                          {/* show customer facing price */}
                           <td>₹{parseFloat(v.salePrice || 0).toLocaleString()}</td>
-                          {/* show internal manufacturing cost */}
                           <td>₹{parseFloat(v.costPrice || 0).toLocaleString()}</td>
-                          {/* current lifecycle state of version */}
                           <td><StatusBadge status={v.status} /></td>
-                          {/* precise time this version went live */}
                           <td className="text-dim">{new Date(v.created_at).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div>
-                  <h3 style={{ marginBottom: 16, fontSize: '1.1rem' }}>Related ECOs</h3>
+              </div>
+            )}
+
+            {/* --- BOM LOGS TAB --- */}
+            {tab === 'bom-history' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                <div className="chart-container" style={{ maxWidth: '600px' }}>
+                  <h4 className="chart-title"><BarChart2 size={16} /> Modification Type Analysis</h4>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={getBomActionData()} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" width={80} fontSize={11} stroke="#94a3b8" axisLine={false} tickLine={false} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="table-wrap">
                   <table className="plm-table">
-                    <thead><tr><th>ECO Title</th><th>Reason</th><th>Effective Date</th><th>User</th></tr></thead>
+                    <thead><tr><th>Action</th><th>By</th><th>Details</th><th>Timestamp</th></tr></thead>
                     <tbody>
-                      {/* show changes that triggered these versions */}
-                      {(data.ecos || []).map(eco => (
-                        <tr key={eco.id}>
-                          <td>{eco.title}</td>
-                          {/* brief explanation for the change */}
-                          <td>{eco.changeReason}</td>
-                          {/* date the change took effect */}
-                          <td>{eco.effectiveDate ? new Date(eco.effectiveDate).toLocaleDateString() : '—'}</td>
-                          {/* engineer who submitted the change */}
-                          <td>{eco.user?.name}</td>
+                      {Array.isArray(data) && data.map(log => (
+                        <tr key={log.id}>
+                          <td><span className="chip">{log.action?.replace(/_/g,' ')}</span></td>
+                          <td>{log.user?.name}</td>
+                          <td style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.newValue || log.oldValue || '—'}</td>
+                          <td className="text-dim">{new Date(log.timestamp).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -255,51 +307,37 @@ const { addToast } = useToast();
               </div>
             )}
 
-            {tab === 'bom-history' && Array.isArray(data) && (
-              <table className="plm-table">
-                <thead><tr><th>Action</th><th>By</th><th>Details</th><th>Timestamp</th></tr></thead>
-                <tbody>
-                  {/* show chronological order of all edits */}
-                  {data.map(log => (
-                    <tr key={log.id}>
-                      {/* type of modification made */}
-                      <td><span className="chip">{log.action?.replace(/_/g,' ') || 'ACTION'}</span></td>
-                      {/* person who performed the action */}
-                      <td>{log.user?.name}</td>
-                      {/* specific data that was changed */}
-                      <td style={{ maxWidth: 400 }}>{log.newValue || log.oldValue || '—'}</td>
-                      {/* exact time of the modification */}
-                      <td className="text-dim">{new Date(log.timestamp).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* --- MATRIX TAB --- */}
+            {tab === 'matrix' && (
+              <div className="table-wrap">
+                <table className="plm-table">
+                  <thead><tr><th>Product Name</th><th>Current Version</th><th>Active BOM</th><th>BOM Version</th><th>Components</th></tr></thead>
+                  <tbody>
+                    {Array.isArray(data) && data.map(row => (
+                      <tr key={row.productId}>
+                        <td><strong>{row.productName}</strong></td>
+                        <td><span className="plm-version-badge">v{row.currentVersion}</span></td>
+                        <td>{row.activeBOM?.reference || '—'}</td>
+                        <td>{row.activeBOM ? row.activeBOM.versionNumber : '—'}</td>
+                        <td className="text-muted">{row.activeBOM?.components?.length || 0} items</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
+
           </motion.div>
         )}
       </div>
+
       <style>{`
-        .stat-pill { background: #f8fafc; padding: 8px 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding-bottom: 8px; }
+        .chart-container { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; }
+        .chart-title { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700; color: #475569; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+        @media (max-width: 1024px) { .report-grid { grid-template-columns: 1fr; } }
       `}</style>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-/*
-FILE SUMMARY
-------------
-What this file does: Manages and displays the reports dashboard.
-Why it exists: Provides users with clear audit trails and project summaries.
-Main functions: ReportsPage, fetchData, exportCSV
-Connects to: Sidebar.jsx for navigation, api.js for data.
-Danger zones: Data mapping crashes if API returns empty stats.
-*/
 

@@ -8,7 +8,7 @@ const { createNotification } = require("./notificationService");
 const logger = require("../utils/logger");
 
 const applyECO = async (ecoId) => {
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // 1. Fetch the ECO with all draft changes
     const eco = await tx.eCO.findUnique({
       where: { id: ecoId },
@@ -43,28 +43,28 @@ const applyECO = async (ecoId) => {
         });
 
         // Copy existing components to new BOM
-        for (const comp of currentBom.components) {
-          await tx.bOMComponent.create({
-            data: {
+        if (currentBom.components.length > 0) {
+          await tx.bOMComponent.createMany({
+            data: currentBom.components.map(comp => ({
               bomId: newBom.id,
               componentName: comp.componentName,
               quantity: comp.quantity,
               makeOrBuy: comp.makeOrBuy,
               supplier: comp.supplier,
               unitCost: comp.unitCost,
-            },
+            }))
           });
         }
 
         // Copy existing operations to new BOM
-        for (const op of currentBom.operations) {
-          await tx.bOMOperation.create({
-            data: {
+        if (currentBom.operations.length > 0) {
+          await tx.bOMOperation.createMany({
+            data: currentBom.operations.map(op => ({
               bomId: newBom.id,
               operationName: op.operationName,
               durationMins: op.durationMins,
               workCenter: op.workCenter,
-            },
+            }))
           });
         }
 
@@ -82,8 +82,11 @@ const applyECO = async (ecoId) => {
           (v) => v.status === "ACTIVE"
         );
         
-        if (currentProductVersion) {
-            // New version row
+        if (!currentProductVersion) {
+            throw new Error("No ACTIVE product version found for this product.");
+        }
+
+        // New version row
             await tx.productVersion.create({
               data: {
                 productId: eco.productId,
@@ -96,12 +99,10 @@ const applyECO = async (ecoId) => {
                 createdById: eco.userId,
               },
             });
-            // Archive old version
             await tx.productVersion.update({
               where: { id: currentProductVersion.id },
               data: { status: "ARCHIVED" },
             });
-        }
 
         await tx.product.update({
           where: { id: eco.productId },
@@ -139,8 +140,8 @@ const applyECO = async (ecoId) => {
         // Apply draft changes to new version
         const updates = {};
         for (const change of eco.draftChanges) {
-          if (change.fieldName === "salePrice") updates.salePrice = parseFloat(change.newValue);
-          if (change.fieldName === "costPrice") updates.costPrice = parseFloat(change.newValue);
+          if (change.fieldName === "salePrice") updates.salePrice = Math.max(0, parseFloat(change.newValue));
+          if (change.fieldName === "costPrice") updates.costPrice = Math.max(0, parseFloat(change.newValue));
           if (change.fieldName === "attachments") updates.attachments = JSON.parse(change.newValue);
         }
         if (Object.keys(updates).length > 0) {
@@ -164,8 +165,8 @@ const applyECO = async (ecoId) => {
         // In-place update on existing product and version
         const updates = {};
         for (const change of eco.draftChanges) {
-          if (change.fieldName === "salePrice") updates.salePrice = parseFloat(change.newValue);
-          if (change.fieldName === "costPrice") updates.costPrice = parseFloat(change.newValue);
+          if (change.fieldName === "salePrice") updates.salePrice = Math.max(0, parseFloat(change.newValue));
+          if (change.fieldName === "costPrice") updates.costPrice = Math.max(0, parseFloat(change.newValue));
           if (change.fieldName === "attachments") updates.attachments = JSON.parse(change.newValue);
         }
         if (Object.keys(updates).length > 0) {
@@ -197,61 +198,63 @@ const applyECO = async (ecoId) => {
       },
     });
 
-    // Notify ECO creator
+    logger.info(`ECO ${ecoId} applied successfully`);
+    return { success: true, userId: eco.userId, title: eco.title };
+  });
+
+  if (result.success) {
     await createNotification(
-      eco.userId,
-      `Your ECO "${eco.title}" has been applied successfully.`,
+      result.userId,
+      `Your ECO "${result.title}" has been applied successfully.`,
       `/ecos/${ecoId}`
     );
-
-    logger.info(`ECO ${ecoId} applied successfully`);
-    return { success: true };
-  });
+  }
+  return { success: true };
 };
 
 // Helper: apply BOM draft changes to a specific BOM
 async function _applyBomDraftChanges(tx, bomId, draftChanges) {
-  for (const change of draftChanges) {
-    if (change.recordType === "BOM_COMPONENT") {
-      const action = change.fieldName; // "ADD", "UPDATE", "REMOVE"
-      if (action === "REMOVE") {
-        await tx.bOMComponent.deleteMany({
-          where: { bomId, componentName: change.recordId },
-        });
-      } else if (action === "ADD") {
-        const data = JSON.parse(change.newValue);
-        await tx.bOMComponent.create({ data: { bomId, ...data } });
-      } else if (action === "UPDATE") {
-        const data = JSON.parse(change.newValue);
-        delete data.id;
-        delete data.bomId;
-        delete data._id;
-        await tx.bOMComponent.updateMany({
-          where: { bomId, componentName: change.recordId },
-          data,
-        });
-      }
-    } else if (change.recordType === "BOM_OPERATION") {
-      const action = change.fieldName;
-      if (action === "REMOVE") {
-        await tx.bOMOperation.deleteMany({
-          where: { bomId, operationName: change.recordId },
-        });
-      } else if (action === "ADD") {
-        const data = JSON.parse(change.newValue);
-        await tx.bOMOperation.create({ data: { bomId, ...data } });
-      } else if (action === "UPDATE") {
-        const data = JSON.parse(change.newValue);
-        delete data.id;
-        delete data.bomId;
-        delete data._id;
-        await tx.bOMOperation.updateMany({
-          where: { bomId, operationName: change.recordId },
-          data,
-        });
-      }
-    }
+  const compRemoves = draftChanges.filter(c => c.recordType === "BOM_COMPONENT" && c.fieldName === "REMOVE").map(c => c.recordId);
+  if (compRemoves.length > 0) {
+    await tx.bOMComponent.deleteMany({ where: { bomId, componentName: { in: compRemoves } } });
   }
+
+  const compAdds = draftChanges.filter(c => c.recordType === "BOM_COMPONENT" && c.fieldName === "ADD").map(c => {
+    const raw = JSON.parse(c.newValue);
+    return { bomId, componentName: raw.componentName, quantity: raw.quantity, makeOrBuy: raw.makeOrBuy, supplier: raw.supplier, unitCost: raw.unitCost };
+  });
+  if (compAdds.length > 0) {
+    await tx.bOMComponent.createMany({ data: compAdds });
+  }
+
+  const compUpdates = draftChanges.filter(c => c.recordType === "BOM_COMPONENT" && c.fieldName === "UPDATE");
+  await Promise.all(compUpdates.map(change => {
+    const raw = JSON.parse(change.newValue);
+    const data = { componentName: raw.componentName, quantity: raw.quantity, makeOrBuy: raw.makeOrBuy, supplier: raw.supplier, unitCost: raw.unitCost };
+    Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+    return tx.bOMComponent.updateMany({ where: { bomId, componentName: change.recordId }, data });
+  }));
+
+  const opRemoves = draftChanges.filter(c => c.recordType === "BOM_OPERATION" && c.fieldName === "REMOVE").map(c => c.recordId);
+  if (opRemoves.length > 0) {
+    await tx.bOMOperation.deleteMany({ where: { bomId, operationName: { in: opRemoves } } });
+  }
+
+  const opAdds = draftChanges.filter(c => c.recordType === "BOM_OPERATION" && c.fieldName === "ADD").map(c => {
+    const raw = JSON.parse(c.newValue);
+    return { bomId, operationName: raw.operationName, durationMins: raw.durationMins, workCenter: raw.workCenter };
+  });
+  if (opAdds.length > 0) {
+    await tx.bOMOperation.createMany({ data: opAdds });
+  }
+
+  const opUpdates = draftChanges.filter(c => c.recordType === "BOM_OPERATION" && c.fieldName === "UPDATE");
+  await Promise.all(opUpdates.map(change => {
+    const raw = JSON.parse(change.newValue);
+    const data = { operationName: raw.operationName, durationMins: raw.durationMins, workCenter: raw.workCenter };
+    Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+    return tx.bOMOperation.updateMany({ where: { bomId, operationName: change.recordId }, data });
+  }));
 }
 
 module.exports = { applyECO };

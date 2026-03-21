@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, GitCompare, ShieldAlert } from 'lucide-react';
+import { GitCompare, Check, AlertCircle } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import DiffTable from '../../components/DiffTable';
+import CustomSelect from '../../components/CustomSelect';
 
 const BOMCompare = () => {
   const { id } = useParams();
@@ -48,9 +50,7 @@ const BOMCompare = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">Compare BOM Versions</h1>
           <p className="page-desc">Side-by-side comparison of component and operation changes</p>
         </div>
@@ -60,18 +60,22 @@ const BOMCompare = () => {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Base Version</label>
-            <select className="plm-select" value={fromVer} onChange={e => setFromVer(e.target.value)}>
-              {sortedHistory.map(v => <option key={v.versionNumber} value={v.versionNumber}>{v.label} — {v.ecoTitle}</option>)}
-            </select>
+            <CustomSelect 
+              value={fromVer} 
+              onChange={val => setFromVer(val)} 
+              options={sortedHistory.map(v => ({ value: v.versionNumber, label: `v${v.versionNumber} — ${v.ecoTitle || 'Initial Setup'}` }))}
+            />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', height: '44px', color: 'var(--text-dim)' }}>
             <GitCompare size={20} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>Compare With</label>
-            <select className="plm-select" value={toVer} onChange={e => setToVer(e.target.value)}>
-              {[...sortedHistory].reverse().map(v => <option key={v.versionNumber} value={v.versionNumber}>{v.label} — {v.ecoTitle}</option>)}
-            </select>
+            <CustomSelect 
+              value={toVer} 
+              onChange={val => setToVer(val)} 
+              options={[...sortedHistory].reverse().map(v => ({ value: v.versionNumber, label: `v${v.versionNumber} — ${v.ecoTitle || 'Initial Setup'}` }))}
+            />
           </div>
         </div>
       </div>
@@ -81,9 +85,9 @@ const BOMCompare = () => {
       ) : diff ? (
         <>
           <div style={{ display: 'flex', gap: '2px', height: '10px', borderRadius: '5px', overflow: 'hidden', marginBottom: '16px', background: 'var(--border-light)' }}>
-            {Array.from({ length: diff.summary.added }).map((_, i) => <div key={`a-${i}`} style={{ flex: 1, background: '#059669' }} />)}
-            {Array.from({ length: diff.summary.removed }).map((_, i) => <div key={`r-${i}`} style={{ flex: 1, background: '#e11d48' }} />)}
-            {Array.from({ length: diff.summary.changed }).map((_, i) => <div key={`c-${i}`} style={{ flex: 1, background: '#d97706' }} />)}
+            {diff.summary.added > 0 && <div style={{ flex: diff.summary.added, background: '#059669' }} />}
+            {diff.summary.removed > 0 && <div style={{ flex: diff.summary.removed, background: '#e11d48' }} />}
+            {diff.summary.changed > 0 && <div style={{ flex: diff.summary.changed, background: '#d97706' }} />}
           </div>
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', marginBottom: '32px' }}>
             <span style={{ color: '#059669', fontWeight: 700 }}>+{diff.summary.added} added</span>

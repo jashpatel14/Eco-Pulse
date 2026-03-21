@@ -166,6 +166,7 @@ model BOM {
   created_at    DateTime      @default(now()) @db.Timestamptz
   components    BOMComponent[]
   operations    BOMOperation[]
+  attachments   String[]
   ecos          ECO[]         @relation("BOMToECO")
 
   // Tracking
@@ -226,6 +227,7 @@ model ECOApprovalRule {
 
 model ECO {
   id            String         @id @default(uuid()) @db.Uuid
+  reference     String         @unique @db.VarChar(50)
   title         String         @db.VarChar(255)
   ecoType       ECOType
   product       Product        @relation(fields: [productId], references: [id])
@@ -240,6 +242,8 @@ model ECO {
   stageId       String         @db.Uuid
   changeReason  ChangeReason
   riskLevel     RiskLevel
+  priority      RiskLevel      @default(MEDIUM)
+  attachments   String[]
   status        ECOStatus      @default(DRAFT)
   created_at    DateTime       @default(now()) @db.Timestamptz
   updated_at    DateTime       @default(now()) @updatedAt @db.Timestamptz

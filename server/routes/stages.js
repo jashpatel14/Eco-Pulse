@@ -25,17 +25,43 @@ router.post("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
     const { name, approvalRequired = false } = req.body;
     if (!name) return res.status(400).json({ message: "Stage name is required." });
 
-    // Insert before "Done" (highest orderIndex)
-    const doneStage = await prisma.eCOStage.findFirst({ orderBy: { orderIndex: "desc" } });
-    const newIndex = doneStage ? doneStage.orderIndex - 1 : 1;
+    const stage = await prisma.$transaction(async (tx) => {
+      const doneStage = await tx.eCOStage.findFirst({ orderBy: { orderIndex: "desc" } });
+      if (doneStage) {
+        await tx.eCOStage.updateMany({
+          where: { orderIndex: { gte: doneStage.orderIndex } },
+          data: { orderIndex: { increment: 1 } },
+        });
+      }
+      const newIndex = doneStage ? doneStage.orderIndex : 1;
 
-    const stage = await prisma.eCOStage.create({
-      data: { name, orderIndex: newIndex, approvalRequired },
+      return await tx.eCOStage.create({
+        data: { name, orderIndex: newIndex, approvalRequired },
+      });
     });
+    
     res.status(201).json(stage);
   } catch (err) {
     logger.error("POST /stages error:", err);
     res.status(500).json({ message: "Failed to create stage." });
+  }
+});
+
+// PATCH /api/v1/stages/reorder
+router.patch("/reorder", authMiddleware, requireRole("ADMIN"), async (req, res) => {
+  try {
+    const { order } = req.body; // Array of { id, orderIndex }
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ message: "order must be an array." });
+    }
+    const updates = order.map(({ id, orderIndex }) =>
+      prisma.eCOStage.update({ where: { id }, data: { orderIndex } })
+    );
+    await prisma.$transaction(updates);
+    res.json({ message: "Stages reordered." });
+  } catch (err) {
+    logger.error("PATCH /stages/reorder error:", err);
+    res.status(500).json({ message: "Failed to reorder stages." });
   }
 });
 
@@ -70,24 +96,6 @@ router.delete("/:id", authMiddleware, requireRole("ADMIN"), async (req, res) => 
   } catch (err) {
     logger.error("DELETE /stages/:id error:", err);
     res.status(500).json({ message: "Failed to delete stage." });
-  }
-});
-
-// PATCH /api/v1/stages/reorder
-router.patch("/reorder", authMiddleware, requireRole("ADMIN"), async (req, res) => {
-  try {
-    const { order } = req.body; // Array of { id, orderIndex }
-    if (!Array.isArray(order)) {
-      return res.status(400).json({ message: "order must be an array." });
-    }
-    const updates = order.map(({ id, orderIndex }) =>
-      prisma.eCOStage.update({ where: { id }, data: { orderIndex } })
-    );
-    await prisma.$transaction(updates);
-    res.json({ message: "Stages reordered." });
-  } catch (err) {
-    logger.error("PATCH /stages/reorder error:", err);
-    res.status(500).json({ message: "Failed to reorder stages." });
   }
 });
 

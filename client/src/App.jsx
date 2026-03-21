@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import Sidebar from './components/Sidebar';
 import PrivateRoute from './components/PrivateRoute';
 import { useState } from 'react';
@@ -122,13 +123,16 @@ function AppRoutes() {
   );
 }
 
+
 function App() {
   return (
     <Router>
       <ToastProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
+        <ConfirmProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </ConfirmProvider>
       </ToastProvider>
     </Router>
   );

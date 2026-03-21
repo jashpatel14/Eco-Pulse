@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Hash, User, ArrowRight, Github, Chrome, Apple } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+import CustomSelect from '../components/CustomSelect';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, register, isAuthenticated } = useAuth();
   const { addToast } = useToast();
 
@@ -17,8 +19,8 @@ const Auth = () => {
 
   useEffect(() => {
     if (isAuthenticated) navigate('/dashboard');
-    setIsRegister(window.location.pathname === '/register');
-  }, [window.location.pathname, isAuthenticated, navigate]);
+    setIsRegister(location.pathname === '/register');
+  }, [location.pathname, isAuthenticated, navigate]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -106,11 +108,15 @@ const Auth = () => {
                 </div>
                 <div>
                   <label style={labelStyle}>Project Role</label>
-                  <select name="role" value={formData.role} onChange={handleChange} style={{ ...inputStyle, cursor: 'pointer' }}>
-                    <option value="ENGINEERING_USER">Engineer</option>
-                    <option value="APPROVER">Approver</option>
-                    <option value="OPERATIONS_USER">Operations</option>
-                  </select>
+                  <CustomSelect 
+                    value={formData.role} 
+                    onChange={val => setFormData({ ...formData, role: val })} 
+                    options={[
+                      { value: "ENGINEERING_USER", label: "Engineer" },
+                      { value: "APPROVER", label: "Approver" },
+                      { value: "OPERATIONS_USER", label: "Operations" }
+                    ]}
+                  />
                 </div>
               </>
             )}

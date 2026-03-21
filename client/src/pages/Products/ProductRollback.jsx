@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { RotateCcw, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -68,9 +69,7 @@ const ProductRollback = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">Version Rollback (Revert)</h1>
           <p className="page-desc">Safely restore the product state to a previous version</p>
         </div>

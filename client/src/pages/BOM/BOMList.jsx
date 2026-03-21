@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ClipboardList, Plus, Search } from 'lucide-react';
+import { ClipboardList, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
@@ -14,9 +14,14 @@ export default function BOMList() {
   const [boms, setBoms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
-    const handleGlobalSearch = (e) => setSearch(e.detail);
+    const handleGlobalSearch = (e) => {
+      setSearch(e.detail);
+      setSkip(0);
+    };
     window.addEventListener('topNavSearch', handleGlobalSearch);
     return () => window.removeEventListener('topNavSearch', handleGlobalSearch);
   }, []);
@@ -24,8 +29,13 @@ export default function BOMList() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data } = await api.get('/boms', { params: { search } });
-        setBoms(data);
+        const { data } = await api.get('/boms', { params: { search, take: 50, skip } });
+        if (skip === 0) {
+          setBoms(data);
+        } else {
+          setBoms(prev => [...prev, ...data]);
+        }
+        setHasMore(data.length === 50);
       } catch {
         addToast('Failed to load BOMs.', 'error');
       } finally {
@@ -33,7 +43,7 @@ export default function BOMList() {
       }
     };
     fetch();
-  }, [search]);
+  }, [search, skip]);
 
   const canCreate = ['ENGINEERING_USER','ADMIN'].includes(user?.role);
 
@@ -66,7 +76,7 @@ export default function BOMList() {
           <div className="table-wrap">
             <motion.table className="plm-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <thead>
-                <tr><th>Reference</th><th>Finished Product</th><th>Quantity</th><th>Version</th><th>Status</th></tr>
+                <tr><th>Reference</th><th>Finished Product</th><th>Version</th><th>Status</th></tr>
               </thead>
               <tbody>
                 {boms.map((bom, i) => (
@@ -79,13 +89,20 @@ export default function BOMList() {
                   >
                     <td><strong>{bom.reference}</strong></td>
                     <td>{bom.product?.name || '—'}</td>
-                    <td style={{ fontWeight: 500 }}>{parseFloat(bom.quantity || 0)}</td>
                     <td><span className="plm-version-badge">v{bom.versionNumber}</span></td>
                     <td><StatusBadge status={bom.status} /></td>
                   </motion.tr>
                 ))}
               </tbody>
             </motion.table>
+
+            {hasMore && !loading && (
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <button className="btn-outline" onClick={() => setSkip(prev => prev + 50)}>
+                  Load More
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

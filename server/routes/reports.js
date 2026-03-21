@@ -8,29 +8,30 @@ const logger = require("../utils/logger");
 // GET /api/v1/reports/eco-summary
 router.get("/eco-summary", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
-    // fetch all ecos with their main links
-    const ecos = await prisma.eCO.findMany({
-      // include related objects for full context
-      include: {
-        // need name for display on board
-        product: { select: { name: true } },
-        // identify who is responsible for the eco
-        user: { select: { name: true } },
-        // track where it sits in the workflow
-        stage: { select: { name: true } },
-        // count modifications for complexity insight
-        _count: { select: { draftChanges: true } }
-      },
-      // show newest first by default
-      orderBy: { created_at: 'desc' }
-    });
+    const [ecos, statusCounts, total] = await Promise.all([
+      prisma.eCO.findMany({
+        include: {
+          product: { select: { name: true } },
+          user: { select: { name: true } },
+          stage: { select: { name: true } },
+          _count: { select: { draftChanges: true } }
+        },
+        orderBy: { created_at: 'desc' },
+        take: 50
+      }),
+      prisma.eCO.groupBy({
+        by: ['status'],
+        _count: { status: true }
+      }),
+      prisma.eCO.count()
+    ]);
 
     const stats = {
-      total: ecos.length,
-      draft: ecos.filter(e => e.status === 'DRAFT').length,
-      inReview: ecos.filter(e => e.status === 'IN_REVIEW').length,
-      applied: ecos.filter(e => e.status === 'APPLIED').length,
-      rejected: ecos.filter(e => e.status === 'REJECTED').length,
+      total,
+      draft: statusCounts.find(s => s.status === 'DRAFT')?._count.status || 0,
+      inReview: statusCounts.find(s => s.status === 'IN_REVIEW')?._count.status || 0,
+      applied: statusCounts.find(s => s.status === 'APPLIED')?._count.status || 0,
+      rejected: statusCounts.find(s => s.status === 'REJECTED')?._count.status || 0,
     };
 
     res.json({ stats, ecos });
@@ -82,7 +83,7 @@ router.get("/bom-history/:bomId", authMiddleware, requireRole("ENGINEERING_USER"
           // direct hit on the bill id
           { recordType: 'BOM', recordId: req.params.bomId },
           // search logs for related component edits
-          { recordType: 'BOM_COMPONENT', recordId: { contains: req.params.bomId } } // Approximation
+          { recordType: 'BOM_COMPONENT', recordId: { startsWith: `${req.params.bomId}_` } }
         ]
       },
       // attach user name to each action log

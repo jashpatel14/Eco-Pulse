@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { RotateCcw, AlertTriangle, ShieldAlert, CheckCircle } from 'lucide-react';
 import api from '../../api/api';
+import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import StatusBadge from '../../components/StatusBadge';
@@ -61,9 +62,7 @@ const BOMRollback = () => {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
+          <BackButton />
           <h1 className="page-title">BOM Version Rollback</h1>
           <p className="page-desc">Restore a previous BOM state by creating a new Draft ECO</p>
         </div>

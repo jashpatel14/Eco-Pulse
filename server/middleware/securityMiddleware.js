@@ -24,6 +24,7 @@ const loginLimiter = createRateLimiter(5, 15 * 60 * 1000);
 const registerLimiter = createRateLimiter(20, 60 * 60 * 1000);
 const forgotPasswordLimiter = createRateLimiter(10, 15 * 60 * 1000);
 const refreshLimiter = createRateLimiter(30, 15 * 60 * 1000);
+const resetPasswordLimiter = createRateLimiter(5, 15 * 60 * 1000);
 
 const securityHeaders = helmet({
   contentSecurityPolicy: {
@@ -55,5 +56,6 @@ module.exports = {
   registerLimiter,
   forgotPasswordLimiter,
   refreshLimiter,
+  resetPasswordLimiter,
   securityHeaders,
 };

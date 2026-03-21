@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import api, { setToken as setApiToken } from "../api/api";
+import api from "../api/api";
 
 const AuthContext = createContext(null);
 
@@ -17,16 +17,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        setApiToken(token);
-        try {
-          const { data } = await api.get("/auth/profile");
-          setUser(data.user);
-        } catch (err) {
-          localStorage.removeItem("token");
-          setApiToken(null);
-        }
+      try {
+        const { data } = await api.get("/auth/profile");
+        setUser(data.user);
+      } catch (err) {
+        setUser(null);
       }
       setLoading(false);
     };
@@ -35,8 +30,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (loginId, password) => {
     const { data } = await api.post("/auth/login", { loginId, password });
-    localStorage.setItem("token", data.token);
-    setApiToken(data.token);
     setUser(data.user);
     return data;
   };
@@ -47,8 +40,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    localStorage.removeItem("token");
-    setApiToken(null);
+    try {
+      await api.post("/auth/logout");
+    } catch (err) {
+      console.error("Logout error", err);
+    }
     setUser(null);
   };
 
