@@ -50,6 +50,9 @@ app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+const versionControlRoutes = require("./routes/versionControl");
+const bomVersionControlRoutes = require("./routes/bomVersionControl");
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/boms", bomRoutes);
@@ -60,6 +63,8 @@ app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/audit", auditRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/version-control", versionControlRoutes);
+app.use("/api/v1/bom-vc", bomVersionControlRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });

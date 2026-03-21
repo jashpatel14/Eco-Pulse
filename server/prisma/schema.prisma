@@ -82,6 +82,10 @@ model User {
   audit_logs      AuditLog[]
   notifications   Notification[]
   approval_rules  ECOApprovalRule[]
+  
+  // Versions created by this user
+  productVersions ProductVersion[]
+  boms_created    BOM[]
 
   @@map("users")
 }
@@ -142,6 +146,12 @@ model ProductVersion {
   attachments   String[]
   status        ProductStatus @default(ACTIVE)
   created_at    DateTime      @default(now()) @db.Timestamptz
+  
+  // Tracking
+  eco           ECO?          @relation(fields: [ecoId], references: [id])
+  ecoId         String?       @db.Uuid
+  createdBy     User?         @relation(fields: [createdById], references: [id])
+  createdById   String?       @db.Uuid
 
   @@map("product_versions")
 }
@@ -156,7 +166,13 @@ model BOM {
   created_at    DateTime      @default(now()) @db.Timestamptz
   components    BOMComponent[]
   operations    BOMOperation[]
-  ecos          ECO[]
+  ecos          ECO[]         @relation("BOMToECO")
+
+  // Tracking
+  originEco     ECO?          @relation("OriginECO", fields: [ecoId], references: [id])
+  ecoId         String?       @db.Uuid
+  createdBy     User?         @relation(fields: [createdById], references: [id])
+  createdById   String?       @db.Uuid
 
   @@map("boms")
 }
@@ -214,7 +230,7 @@ model ECO {
   ecoType       ECOType
   product       Product        @relation(fields: [productId], references: [id])
   productId     String         @db.Uuid
-  bom           BOM?           @relation(fields: [bomId], references: [id])
+  bom           BOM?           @relation("BOMToECO", fields: [bomId], references: [id])
   bomId         String?        @db.Uuid
   user          User           @relation(fields: [userId], references: [id])
   userId        String         @db.Uuid
@@ -228,6 +244,10 @@ model ECO {
   created_at    DateTime       @default(now()) @db.Timestamptz
   updated_at    DateTime       @default(now()) @updatedAt @db.Timestamptz
   draftChanges  ECODraftChange[]
+  
+  // Versions triggered by this ECO
+  createdVersions ProductVersion[]
+  createdBOMs     BOM[]            @relation("OriginECO")
 
   @@map("ecos")
 }

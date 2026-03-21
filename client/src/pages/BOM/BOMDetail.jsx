@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ClipboardList, GitPullRequest, Edit } from 'lucide-react';
+import { ArrowLeft, ClipboardList, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw } from 'lucide-react';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
@@ -11,9 +10,11 @@ export default function BOMDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const isAdmin = user?.role === 'ADMIN';
   const isEngineer = user?.role === 'ENGINEERING_USER';
   const isApprover = user?.role === 'APPROVER';
+  const isOpsUser = user?.role === 'OPERATIONS_USER';
   const canRaiseECO = (isAdmin || isEngineer || isApprover);
   const [bom, setBom] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,13 +64,13 @@ export default function BOMDetail() {
       </div>
 
       <div className="tab-bar">
-        {[['components','Components'],['operations','Operations'],['history','BOM History']].map(([key,label]) => (
+        {[['components','Components'],['operations','Operations'],['vcs','Version Control']].map(([key,label]) => (
           <button key={key} className={`tab-btn ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
 
       {tab === 'components' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <span className="text-dim">{bom.components.length} components</span>
             <span className="chip">Total Cost: ₹{totalCost.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
@@ -91,11 +92,11 @@ export default function BOMDetail() {
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {tab === 'operations' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="glass-card">
           <div className="table-wrap">
             <table className="plm-table">
               <thead><tr><th>Operation</th><th>Duration (min)</th><th>Work Center</th></tr></thead>
@@ -112,27 +113,42 @@ export default function BOMDetail() {
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
       )}
 
-      {tab === 'history' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="table-wrap">
-            <table className="plm-table">
-              <thead><tr><th>Reference</th><th>Version</th><th>Status</th><th>Created</th></tr></thead>
-              <tbody>
-                {(bom.product?.boms || []).map(b => (
-                  <tr key={b.id} onClick={() => navigate(`/boms/${b.id}`)} style={{ cursor: 'pointer', fontWeight: b.id === bom.id ? 600 : 400 }}>
-                    <td>{b.reference}{b.id === bom.id && <span className="chip" style={{ marginLeft: 8 }}>current</span>}</td>
-                    <td><span className="plm-version-badge">v{b.versionNumber}</span></td>
-                    <td><StatusBadge status={b.status} /></td>
-                    <td className="text-dim">{new Date(b.created_at).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {tab === 'vcs' && (
+        <div>
+          <div className="section-title">BOM Version Control</div>
+          <div className="detail-grid">
+            <div className="glass-card hover-card" onClick={() => navigate(`/boms/${id}/history`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+              <Clock size={32} color="var(--brand)" style={{ marginBottom: '12px' }} />
+              <h3 style={{ margin: 0 }}>Full History</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Timeline of all BOM versions</p>
+            </div>
+
+            <div className="glass-card hover-card" onClick={() => navigate(`/boms/${id}/compare`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+              <GitCompare size={32} color="#fbbf24" style={{ marginBottom: '12px' }} />
+              <h3 style={{ margin: 0 }}>Compare Versions</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Side-by-side component diff</p>
+            </div>
+
+            {!isOpsUser && (
+              <div className="glass-card hover-card" onClick={() => navigate(`/boms/${id}/blame`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+                <UserCheck size={32} color="#059669" style={{ marginBottom: '12px' }} />
+                <h3 style={{ margin: 0 }}>Blame View</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Trace components to their origin ECO</p>
+              </div>
+            )}
+
+            {(isAdmin || isEngineer) && (
+              <div className="glass-card hover-card" onClick={() => navigate(`/boms/${id}/rollback`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+                <RotateCcw size={32} color="#e11d48" style={{ marginBottom: '12px' }} />
+                <h3 style={{ margin: 0 }}>Rollback</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Restore a previous BOM state</p>
+              </div>
+            )}
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

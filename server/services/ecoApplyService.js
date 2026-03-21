@@ -37,6 +37,8 @@ const applyECO = async (ecoId) => {
             productId: currentBom.productId,
             versionNumber: newVersionNumber,
             status: "ACTIVE",
+            ecoId: eco.id,
+            createdById: eco.userId,
           },
         });
 
@@ -90,6 +92,8 @@ const applyECO = async (ecoId) => {
                 costPrice: currentProductVersion.costPrice,
                 attachments: [...currentProductVersion.attachments],
                 status: "ACTIVE",
+                ecoId: eco.id,
+                createdById: eco.userId,
               },
             });
             // Archive old version
@@ -127,6 +131,8 @@ const applyECO = async (ecoId) => {
             costPrice: currentVersion.costPrice,
             attachments: [...currentVersion.attachments],
             status: "ACTIVE",
+            ecoId: eco.id,
+            createdById: eco.userId,
           },
         });
 

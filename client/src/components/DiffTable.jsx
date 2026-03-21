@@ -1,126 +1,54 @@
-// DiffTable — shows BOM or Product diff between versions
-import { ArrowRight } from 'lucide-react';
+import React from 'react';
+import { Plus, Minus, RefreshCcw, Equal } from 'lucide-react';
 
-// BOM Diff Table
-export function BOMDiffTable({ components = [], operations = [] }) {
+const DiffTable = ({ data, title }) => {
+  if (!data || data.length === 0) return null;
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'added': return { bg: '#ecfdf5', icon: <Plus size={14} color="#059669" />, prefix: '+', color: '#059669' };
+      case 'removed': return { bg: '#fff1f2', icon: <Minus size={14} color="#e11d48" />, prefix: '-', color: '#e11d48' };
+      case 'changed': return { bg: '#fffbeb', icon: <RefreshCcw size={14} color="#d97706" />, prefix: '~', color: '#d97706' };
+      default: return { bg: 'transparent', icon: <Equal size={14} color="#94a3b8" />, prefix: '=', color: 'var(--text-muted)' };
+    }
+  };
+
   return (
-    <div className="diff-section">
-      <h4 className="diff-heading">Components</h4>
-      <table className="diff-table">
-        <thead>
-          <tr>
-            <th>Component</th>
-            <th>Version 1 Qty</th>
-            <th>Version 2 Qty</th>
-            <th>Make/Buy</th>
-            <th>Unit Cost</th>
-            <th>Cost Impact</th>
-          </tr>
-        </thead>
-        <tbody>
-          {components.map((row, i) => {
-            const impact = row.unitCost
-              ? ((parseFloat(row.newQty || 0) - parseFloat(row.oldQty || 0)) * parseFloat(row.unitCost)).toFixed(2)
-              : null;
-            const rowClass = row.change === 'added'   ? 'diff-row-added'
-                           : row.change === 'removed' ? 'diff-row-removed'
-                           : 'diff-row-neutral';
-            return (
-              <tr key={i} className={rowClass}>
-                <td>{row.componentName}</td>
-                <td>{row.oldQty ?? '—'}</td>
-                <td>{row.newQty ?? '—'}</td>
-                <td>
-                  <span className={`make-buy-badge ${(row.makeOrBuy || row.newMakeOrBuy) === 'MAKE' ? 'badge-make' : 'badge-buy'}`}>
-                    {row.makeOrBuy || row.newMakeOrBuy || '—'}
-                  </span>
-                </td>
-                <td>{row.unitCost ? `₹${parseFloat(row.unitCost).toFixed(2)}` : '—'}</td>
-                <td className={impact > 0 ? 'impact-pos' : impact < 0 ? 'impact-neg' : ''}>
-                  {impact !== null ? `₹${impact}` : '—'}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        {components.length > 0 && (
-          <tfoot>
-            <tr className="diff-total-row">
-              <td colSpan={5}><strong>Total Cost Impact</strong></td>
-              <td>
-                <strong>
-                  ₹{components
-                    .filter(r => r.unitCost)
-                    .reduce((acc, r) => {
-                      const impact = ((parseFloat(r.newQty || 0) - parseFloat(r.oldQty || 0)) * parseFloat(r.unitCost));
-                      return acc + impact;
-                    }, 0)
-                    .toFixed(2)}
-                </strong>
-              </td>
+    <div style={{ marginBottom: '32px' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-main)' }}>{title}</h3>
+      <div className="table-wrap" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+        <table className="plm-table" style={{ margin: 0 }}>
+          <thead>
+            <tr>
+              <th style={{ width: '40px' }}></th>
+              <th>Name / Field</th>
+              <th>Status</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Change</th>
             </tr>
-          </tfoot>
-        )}
-      </table>
-
-      {operations.length > 0 && (
-        <>
-          <h4 className="diff-heading mt-4">Operations</h4>
-          <table className="diff-table">
-            <thead>
-              <tr>
-                <th>Operation</th>
-                <th>Old Duration (min)</th>
-                <th>New Duration (min)</th>
-                <th>Work Center</th>
-              </tr>
-            </thead>
-            <tbody>
-              {operations.map((op, i) => {
-                const changed = op.oldDurationMins !== op.newDurationMins;
-                return (
-                  <tr key={i} className={changed ? 'diff-row-changed' : 'diff-row-neutral'}>
-                    <td>{op.operationName}</td>
-                    <td>{op.oldDurationMins ?? '—'}</td>
-                    <td>{op.newDurationMins ?? '—'}</td>
-                    <td>{op.workCenter}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
-      )}
+          </thead>
+          <tbody>
+            {data.map((item, idx) => {
+              const style = getStatusStyle(item.status);
+              return (
+                <tr key={idx} style={{ backgroundColor: style.bg }}>
+                  <td>{style.icon}</td>
+                  <td><strong>{item.name || item.field}</strong></td>
+                  <td style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: style.color }}>{item.status}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{item.fromValue}</td>
+                  <td><strong>{item.toValue}</strong></td>
+                  <td style={{ fontWeight: 600, color: style.color }}>
+                    {style.prefix} {item.change || ''}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-}
+};
 
-// Product Diff Table
-export function ProductDiffTable({ rows = [] }) {
-  return (
-    <table className="diff-table">
-      <thead>
-        <tr>
-          <th>Field</th>
-          <th>Version 1</th>
-          <th></th>
-          <th>Version 2</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, i) => {
-          const changed = row.oldValue !== row.newValue;
-          const isAttachment = row.field === 'Attachments';
-          return (
-            <tr key={i} className={changed ? 'diff-row-changed' : 'diff-row-neutral'}>
-              <td><strong>{row.field}</strong></td>
-              <td className={isAttachment ? 'att-old' : ''}>{row.oldValue ?? '—'}</td>
-              <td><ArrowRight size={14} /></td>
-              <td className={isAttachment ? 'att-new' : ''}>{row.newValue ?? '—'}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
+export default DiffTable;

@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Package, GitPullRequest, Edit } from 'lucide-react';
+import { ArrowLeft, Package, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw } from 'lucide-react';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
@@ -11,9 +10,11 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const isAdmin = user?.role === 'ADMIN';
   const isEngineer = user?.role === 'ENGINEERING_USER';
   const isApprover = user?.role === 'APPROVER';
+  const isOpsUser = user?.role === 'OPERATIONS_USER';
   const canRaiseECO = (isAdmin || isEngineer || isApprover);
   const canEdit = isAdmin;
   const [product, setProduct] = useState(null);
@@ -65,15 +66,15 @@ export default function ProductDetail() {
       </div>
 
       <div className="tab-bar">
-        {['info', 'versions'].map(t => (
+        {['info', 'vcs'].map(t => (
           <button key={t} className={`tab-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t === 'info' ? 'Product Info' : 'Version History'}
+            {t === 'info' ? 'Product Info' : 'Version Control'}
           </button>
         ))}
       </div>
 
       {tab === 'info' && (
-        <motion.div className="glass-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="glass-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
             <div className="detail-grid">
               <div className="detail-field">
@@ -105,30 +106,64 @@ export default function ProductDetail() {
               </div>
             </>
           )}
-        </motion.div>
+        </div>
       )}
 
-      {tab === 'versions' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="table-wrap">
-            <table className="plm-table">
-              <thead>
-                <tr><th>Version</th><th>Sale Price</th><th>Cost Price</th><th>Status</th><th>Created</th></tr>
-              </thead>
-              <tbody>
-                {product.versions.map(v => (
-                  <tr key={v.id} style={{ cursor: 'default' }}>
-                    <td><span className="plm-version-badge">v{v.versionNumber}</span></td>
-                    <td>₹{parseFloat(v.salePrice).toLocaleString()}</td>
-                    <td>₹{parseFloat(v.costPrice).toLocaleString()}</td>
-                    <td><StatusBadge status={v.status} /></td>
-                    <td className="text-dim">{new Date(v.created_at).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {tab === 'vcs' && (
+        <div>
+          <div className="section-title">Version Control & Audit</div>
+          <div className="detail-grid">
+            <div className="glass-card hover-card" onClick={() => navigate(`/products/${id}/history`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+              <Clock size={32} color="var(--brand)" style={{ marginBottom: '12px' }} />
+              <h3 style={{ margin: 0 }}>Full History</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Visualize ECO timeline & audit logs</p>
+            </div>
+            
+            <div className="glass-card hover-card" onClick={() => navigate(`/products/${id}/compare`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+              <GitCompare size={32} color="#fbbf24" style={{ marginBottom: '12px' }} />
+              <h3 style={{ margin: 0 }}>Compare Versions</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Side-by-side BOM diffing</p>
+            </div>
+
+            {!isOpsUser && (
+              <div className="glass-card hover-card" onClick={() => navigate(`/products/${id}/blame`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+                <UserCheck size={32} color="#059669" style={{ marginBottom: '12px' }} />
+                <h3 style={{ margin: 0 }}>Blame (Contributors)</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Trace each field to its origin ECO</p>
+              </div>
+            )}
+
+            {(isAdmin || isEngineer) && (
+              <div className="glass-card hover-card" onClick={() => navigate(`/products/${id}/rollback`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+                <RotateCcw size={32} color="#e11d48" style={{ marginBottom: '12px' }} />
+                <h3 style={{ margin: 0 }}>Rollback</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Safely revert to a previous state</p>
+              </div>
+            )}
           </div>
-        </motion.div>
+
+          <div className="section-title" style={{ marginTop: '32px' }}>Quick View: Recent Versions</div>
+          <div className="glass-card">
+            <div className="table-wrap">
+              <table className="plm-table">
+                <thead>
+                  <tr><th>Version</th><th>Sale Price</th><th>Cost Price</th><th>Status</th><th>Created</th></tr>
+                </thead>
+                <tbody>
+                  {product.versions.map(v => (
+                    <tr key={v.id} style={{ cursor: 'default' }}>
+                      <td><span className="plm-version-badge">v{v.versionNumber}</span></td>
+                      <td>₹{parseFloat(v.salePrice).toLocaleString()}</td>
+                      <td>₹{parseFloat(v.costPrice).toLocaleString()}</td>
+                      <td><StatusBadge status={v.status} /></td>
+                      <td className="text-dim">{new Date(v.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
