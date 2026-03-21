@@ -18,7 +18,8 @@ const Auth = () => {
     loginId: '',
     email: '',
     password: '',
-    rePassword: ''
+    rePassword: '',
+    role: 'ENGINEERING_USER'
   });
 
   useEffect(() => {
@@ -70,7 +71,8 @@ const Auth = () => {
         const res = await register({
           loginId: formData.loginId,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          role: formData.role
         });
         addToast(res.message, 'success');
         navigate('/login');
@@ -205,6 +207,26 @@ const Auth = () => {
                   style={{ paddingLeft: '40px' }}
                 />
                 <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              </div>
+            </div>
+          )}
+          {isRegister && (
+            <div className="form-field">
+              <label className="plm-label">Project Role</label>
+              <div style={{ position: 'relative' }}>
+                <select 
+                  className="plm-select"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingLeft: '40px' }}
+                >
+                  <option value="ENGINEERING_USER">Engineering User</option>
+                  <option value="APPROVER">Approver</option>
+                  <option value="OPERATIONS_USER">Operations User</option>
+                </select>
+                <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
               </div>
             </div>
           )}

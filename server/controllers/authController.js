@@ -9,7 +9,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h";
 // ─── Register ────────────────────────────────────────────
 const register = async (req, res) => {
   try {
-    const { loginId, email, password } = req.body;
+    const { loginId, email, password, role } = req.body;
 
     // 1. Validation Logic
     if (!loginId || loginId.length < 6 || loginId.length > 12) {
@@ -27,6 +27,10 @@ const register = async (req, res) => {
         message: "Password must be at least 8 characters long, contains at least one uppercase letter, one lowercase letter, and one special character." 
       });
     }
+
+    // Role Validation (Exclude ADMIN for security)
+    const validRoles = ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER"];
+    const assignedRole = validRoles.includes(role) ? role : "ENGINEERING_USER";
 
     // 2. Check Uniqueness
     const existingUser = await prisma.user.findFirst({
@@ -56,8 +60,8 @@ const register = async (req, res) => {
         email,
         password: hashedPassword,
         name: loginId, // Use loginId as default name
-        role: "ENGINEERING_USER", // Default role per spec
-        is_verified: true, // Auto-verify for now as per previous simplification context but keeping it safe
+        role: assignedRole,
+        is_verified: true,
       }
     });
 
