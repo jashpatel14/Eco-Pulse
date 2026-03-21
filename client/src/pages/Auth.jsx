@@ -80,19 +80,19 @@ const Auth = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: '#ffffff', fontFamily: "'Inter', sans-serif" }}>
       {/* --- FORM SECTION (LEFT) --- */}
-      <div style={{ flex: '1.2', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px' }}>
+      <div style={{ flex: '1.2', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
         <div style={{ width: '100%', maxWidth: '400px' }}>
           
-          <div style={{ marginBottom: '48px' }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.04em', marginBottom: '12px' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <h1 style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.04em', marginBottom: '10px' }}>
               {isRegister ? 'Join EcoPulse' : 'Welcome back!'}
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.5 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.5 }}>
               {isRegister ? 'Start your journey with modern PLM.' : 'Simplify your workflow and boost your productivity with EcoPulse.'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
               <label style={labelStyle}>Login ID or Username</label>
               <input name="loginId" placeholder="Enter your login ID" value={formData.loginId} onChange={handleChange} required style={inputStyle} />
@@ -137,7 +137,7 @@ const Auth = () => {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="btn-plm" style={{ width: '100%', height: '56px', marginTop: '8px', justifyContent: 'center' }}>
+            <button type="submit" disabled={loading} className="btn-plm" style={{ width: '100%', height: '52px', marginTop: '4px', justifyContent: 'center' }}>
               {loading ? 'Processing...' : (isRegister ? 'Register Account' : 'Login')}
             </button>
 
@@ -152,13 +152,13 @@ const Auth = () => {
       </div>
 
       {/* --- ILLUSTRATION SECTION (RIGHT) --- */}
-      <div style={{ flex: '1', background: 'var(--brand-soft)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ flex: '1', background: 'var(--brand-soft)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', position: 'relative', overflow: 'hidden' }}>
         {/* Decorative elements */}
         <div style={{ position: 'absolute', top: '10%', right: '10%', width: '300px', height: '300px', background: 'radial-gradient(circle, hsla(140, 40%, 45%, 0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
         <div style={{ position: 'absolute', bottom: '10%', left: '10%', width: '250px', height: '250px', background: 'radial-gradient(circle, hsla(140, 40%, 45%, 0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
 
         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: '480px' }}>
-          <img src="/assets/auth_illustration.png" alt="EcoPulse Illustration" style={{ width: '100%', height: 'auto', marginBottom: '40px', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.05))' }} />
+          <img src="/assets/auth_illustration.png" alt="EcoPulse Illustration" style={{ width: '100%', height: 'auto', marginBottom: '32px', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.05))' }} />
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '16px', letterSpacing: '-0.02em' }}>
             {isRegister ? 'Accelerate engineering' : 'Organize your product data'}
           </h2>

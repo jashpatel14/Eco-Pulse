@@ -19,10 +19,10 @@ const STATUS_LABELS = {
   APPLIED:   'Applied',
 };
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({ status, label }) {
   return (
     <span className={`status-badge ${STATUS_STYLES[status] || 'badge-archived'}`}>
-      {STATUS_LABELS[status] || status}
+      {label || STATUS_LABELS[status] || status}
     </span>
   );
 }

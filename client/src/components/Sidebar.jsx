@@ -29,17 +29,39 @@ export default function Sidebar({ isOpen, closeSidebar }) {
       <aside 
         className={`sidebar master-menu-drawer ${isOpen ? 'open' : ''}`}
         style={{
-          position: 'fixed', left: 0, top: '60px', bottom: 0,
+          position: 'fixed', left: 0, top: 0, bottom: 0,
           width: '260px', zIndex: 1050,
           backgroundColor: '#ffffff',
           borderRight: '1px solid var(--border-color)',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.02)',
+          boxShadow: 'var(--shadow-md)',
           overflowY: 'auto',
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'all 0.3s var(--ease)'
         }}
       >
-        <div style={{ padding: '20px' }}>
+        <div style={{ padding: '0 20px 20px' }}>
+          {/* Logo / Branding Area */}
+          <div style={{ 
+            height: '60px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '10px',
+            borderBottom: '1px solid var(--border-light)'
+          }}>
+            <h2 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: 800, 
+              color: 'var(--brand)',
+              margin: 0,
+              letterSpacing: '-0.02em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <img src="/logo.png" alt="EcoPulse" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+              EcoPulse
+            </h2>
+          </div>
           
           <nav className="sidebar-nav">
             <NavLink to="/dashboard" onClick={closeSidebar} className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}>

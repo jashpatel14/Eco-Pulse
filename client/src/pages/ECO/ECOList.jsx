@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GitPullRequest, Plus, Filter } from 'lucide-react';
+import { GitPullRequest, Plus, Filter, LayoutList, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
@@ -21,6 +21,7 @@ export default function ECOList() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: '', riskLevel: '', ecoType: '', search: '' });
   const [showFilters, setShowFilters] = useState(true);
+  const [view, setView] = useState('list'); // 'list' or 'kanban'
   
   useEffect(() => {
     const handleGlobalSearch = (e) => setFilters(f => ({ ...f, search: e.detail }));
@@ -56,6 +57,22 @@ export default function ECOList() {
           <h1 className="page-title">Engineering Change Orders (ECO's)</h1>
         </div>
         <div className="page-actions">
+          <div className="kanban-view-toggle" style={{ marginRight: 8 }}>
+            <button 
+              className={`kanban-toggle-btn ${view === 'list' ? 'active' : ''}`} 
+              onClick={() => setView('list')}
+              title="List View"
+            >
+              <LayoutList size={18} />
+            </button>
+            <button 
+              className={`kanban-toggle-btn ${view === 'kanban' ? 'active' : ''}`} 
+              onClick={() => setView('kanban')}
+              title="Kanban View"
+            >
+              <LayoutGrid size={18} />
+            </button>
+          </div>
           {canCreate && (
             <button className="btn-plm btn-sm" onClick={() => navigate('/ecos/new')}>
               <Plus size={18} /> New ECO
@@ -91,7 +108,7 @@ export default function ECOList() {
         </div>
       )}
 
-      <div className="glass-card">
+      <div className={view === 'list' ? 'glass-card' : ''}>
         {loading ? (
           <div className="empty-state"><div className="spinner"></div></div>
         ) : ecos.length === 0 ? (
@@ -99,7 +116,7 @@ export default function ECOList() {
             <GitPullRequest size={48} style={{ margin: '0 auto 12px' }} />
             <p>No ECOs found. {canCreate && 'Raise one to get started.'}</p>
           </div>
-        ) : (
+        ) : view === 'list' ? (
           <div className="table-wrap">
             <motion.table className="plm-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <thead>
@@ -130,6 +147,53 @@ export default function ECOList() {
                 ))}
               </tbody>
             </motion.table>
+          </div>
+        ) : (
+          <div className="kanban-board">
+            {ECO_STATUSES.filter(s => s !== '').map(status => {
+              const columnEcos = ecos.filter(e => e.status === status);
+              return (
+                <div key={status} className="kanban-column">
+                  <div className="kanban-column-header">
+                    <span className="kanban-column-title">
+                      {status.replace(/_/g, ' ')}
+                    </span>
+                    <span className="kanban-column-count">{columnEcos.length}</span>
+                  </div>
+                  <div className="kanban-cards">
+                    {columnEcos.map(eco => (
+                      <motion.div 
+                        key={eco.id} 
+                        className="kanban-card"
+                        onClick={() => navigate(`/ecos/${eco.id}`)}
+                        whileHover={{ y: -4 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                      >
+                        <div className="kanban-card-title">{eco.title}</div>
+                        <div style={{ marginBottom: 12 }}>
+                          {eco.ecoType === 'BOM' ? (
+                            <StatusBadge status="IN_REVIEW" label="BoM" />
+                          ) : (
+                            <StatusBadge status="ACTIVE" label="Product" />
+                          )}
+                        </div>
+                        <div className="kanban-card-meta">
+                          <span className="kanban-card-product">
+                            {eco.product?.name || 'No Product'}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                    {columnEcos.length === 0 && (
+                      <div className="text-dim" style={{ textAlign: 'center', padding: '20px', fontSize: '0.8rem' }}>
+                        Empty
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

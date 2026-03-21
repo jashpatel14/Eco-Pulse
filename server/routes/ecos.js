@@ -18,7 +18,7 @@ const ECO_INCLUDE = {
 };
 
 // GET /api/v1/ecos
-router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
+router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "OPERATIONS_USER", "ADMIN"), async (req, res) => {
   try {
     const { status, ecoType, riskLevel, changeReason, userId, search } = req.query;
     const isOpsUser = req.user.role === "OPERATIONS_USER";
@@ -147,7 +147,7 @@ router.patch("/:id", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req
 });
 
 // GET /api/v1/ecos/:id
-router.get("/:id", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
+router.get("/:id", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "OPERATIONS_USER", "ADMIN"), async (req, res) => {
   try {
     const eco = await prisma.eCO.findUnique({
       where: { id: req.params.id },

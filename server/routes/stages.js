@@ -6,7 +6,7 @@ const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
 // GET /api/v1/stages
-router.get("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
+router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "OPERATIONS_USER", "ADMIN"), async (req, res) => {
   try {
     const stages = await prisma.eCOStage.findMany({
       orderBy: { orderIndex: "asc" },

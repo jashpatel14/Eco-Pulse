@@ -38,14 +38,17 @@ function AppLayout({ children }) {
   
   return (
     <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingTop: '60px' }}>
-      <TopNavBar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <TopNavBar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="app-main-wrapper" style={{ display: 'flex', flex: 1, position: 'relative', backgroundColor: 'var(--bg-page)' }}>
         <Sidebar isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
         <div className="app-main" style={{ 
           flex: 1, 
           padding: '24px', 
           marginLeft: sidebarOpen ? 'var(--sidebar-w)' : '0',
-          transition: 'margin-left 0.3s var(--ease)'
+          width: sidebarOpen ? 'calc(100% - var(--sidebar-w))' : '100%',
+          maxWidth: sidebarOpen ? 'calc(100vw - var(--sidebar-w))' : '100vw',
+          transition: 'all 0.3s var(--ease)',
+          overflowX: 'auto'
         }}>
           {children}
         </div>

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, Search, User, LogOut } from 'lucide-react';
 
-export default function TopNavBar({ toggleSidebar }) {
+export default function TopNavBar({ toggleSidebar, isSidebarOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -37,7 +37,7 @@ export default function TopNavBar({ toggleSidebar }) {
   } else if (location.pathname.startsWith('/dashboard')) {
     pageTitle = "Dashboard";
   } else {
-    pageTitle = "Eco-Pulse PLM";
+    pageTitle = "EcoPulse PLM";
   }
 
   // Derived state for 'New' button has been removed per user request.
@@ -53,7 +53,9 @@ export default function TopNavBar({ toggleSidebar }) {
   return (
     <div className="top-navbar" style={{
       position: 'fixed',
-      top: 0, left: 0, right: 0,
+      top: 0, 
+      left: isSidebarOpen ? 'var(--sidebar-w)' : 0, 
+      right: 0,
       height: '60px',
       backgroundColor: 'var(--surface-color, #ffffff)',
       borderBottom: '1px solid var(--border-color)',
@@ -61,7 +63,8 @@ export default function TopNavBar({ toggleSidebar }) {
       alignItems: 'center',
       padding: '0 20px',
       zIndex: 1000,
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+      transition: 'left 0.3s var(--ease)'
     }}>
       
       {/* LEFT: Hamburger & Title */}

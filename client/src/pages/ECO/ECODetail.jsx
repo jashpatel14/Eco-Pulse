@@ -117,13 +117,13 @@ export default function ECODetail() {
             </>
           )}
           {canValidate && (
-            <button className="btn-plm" onClick={() => doAction('approve')} disabled={actionLoading} style={{ backgroundColor: '#3b82f6' }}>
+            <button className="btn-plm" onClick={() => doAction('approve')} disabled={actionLoading}>
                <CheckCircle size={18} /> Validate
             </button>
           )}
           {canEdit && (
             <>
-               <button className="btn-plm" onClick={() => navigate(`/ecos/new?id=${id}`)} style={{ backgroundColor: 'var(--brand)' }}>
+               <button className="btn-plm" onClick={() => navigate(`/ecos/new?id=${id}`)}>
                    Edit Info
                </button>
                <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-product`)}>
