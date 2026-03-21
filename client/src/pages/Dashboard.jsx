@@ -73,7 +73,6 @@ export default function Dashboard() {
   const QUICK_ACTIONS = [
     { label: 'New Product', onClick: () => navigate('/products/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
     { label: 'New BOM', onClick: () => navigate('/boms/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
-    { label: 'New ECO', onClick: () => navigate('/ecos/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
     { label: 'View Reports', onClick: () => navigate('/reports'), roles: null, primary: false },
     { label: 'Manage Settings', onClick: () => navigate('/settings'), roles: ['ADMIN'], primary: false },
     { label: 'Audit Log', onClick: () => navigate('/audit'), roles: ['ADMIN'], primary: false },

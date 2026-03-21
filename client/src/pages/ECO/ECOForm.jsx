@@ -128,14 +128,7 @@ export default function ECOForm() {
       </div>
 
       <motion.div className="glass-card" style={{ maxWidth: 680 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div style={{ marginBottom: '20px', padding: '0 0 16px 0', borderBottom: '1px solid #eee' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-             <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#fff', border: '1px solid #ccc' }} />
-             <div style={{ padding: '4px 16px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, backgroundColor: isLocked ? '#22c55e' : '#ed8080', color: 'white' }}>
-               {isLocked ? 'Locked' : (isEdit ? 'Draft' : 'New')}
-             </div>
-          </div>
-        </div>
+        {/* Removed internal New/Draft status badge as requested */}
 
         <form onSubmit={e => handleSubmit(e, 'save')} className="plm-form">
           <div className="field-group">

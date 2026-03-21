@@ -53,11 +53,7 @@ export default function ECOList() {
           <button className="btn-outline btn-sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter size={16} /> Filters
           </button>
-          {canCreate && (
-            <button className="btn-plm" onClick={() => navigate('/ecos/new')}>
-              <Plus size={18} /> New ECO
-            </button>
-          )}
+          {/* Removed New ECO button as requested */}
         </div>
       </div>
 
