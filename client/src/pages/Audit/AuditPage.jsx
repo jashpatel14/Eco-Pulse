@@ -1,0 +1,104 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Shield } from 'lucide-react';
+import api from '../../api/api';
+import { useToast } from '../../context/ToastContext';
+
+const RECORD_TYPES = ['','PRODUCT','BOM','ECO'];
+
+export default function AuditPage() {
+  const { addToast } = useToast();
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ recordType: '', from: '', to: '' });
+
+  const fetch = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (filters.recordType) params.recordType = filters.recordType;
+      if (filters.from) params.from = filters.from;
+      if (filters.to) params.to = filters.to;
+      const { data } = await api.get('/audit', { params });
+      setLogs(data);
+    } catch {
+      addToast('Failed to load audit logs.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetch(); }, [filters]);
+
+  const ACTION_COLOR = {
+    PRODUCT_CREATED: '#34d399', BOM_CREATED: '#60a5fa', ECO_CREATED: '#c084fc',
+    ECO_STARTED: '#fbbf24', ECO_STAGE_ADVANCED: '#60a5fa', ECO_VALIDATED: '#fbbf24',
+    ECO_APPROVED: '#34d399', ECO_REJECTED: '#f87171', ECO_APPLIED: '#c084fc',
+    PRODUCT_ARCHIVED: '#a1a1aa',
+  };
+
+  return (
+    <div className="plm-page">
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title"><Shield size={22} style={{ display:'inline', marginRight: 8 }} />Audit Log</h1>
+          <p className="page-desc">Immutable record of all PLM system changes</p>
+        </div>
+      </div>
+
+      <div className="filter-panel">
+        <div>
+          <label>Record Type</label>
+          <select className="plm-select" value={filters.recordType}
+            onChange={e => setFilters(f => ({ ...f, recordType: e.target.value }))}>
+            {RECORD_TYPES.map(r => <option key={r} value={r}>{r || 'All'}</option>)}
+          </select>
+        </div>
+        <div>
+          <label>From Date</label>
+          <input className="plm-input" type="date" value={filters.from}
+            onChange={e => setFilters(f => ({ ...f, from: e.target.value }))} />
+        </div>
+        <div>
+          <label>To Date</label>
+          <input className="plm-input" type="date" value={filters.to}
+            onChange={e => setFilters(f => ({ ...f, to: e.target.value }))} />
+        </div>
+      </div>
+
+      <div className="glass-card">
+        {loading ? (
+          <div className="empty-state"><div className="spinner"></div></div>
+        ) : logs.length === 0 ? (
+          <div className="empty-state"><p>No audit log entries found.</p></div>
+        ) : (
+          <motion.div className="table-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <table className="plm-table">
+              <thead>
+                <tr><th>Action</th><th>Record</th><th>Record ID</th><th>Details</th><th>By</th><th>Timestamp</th></tr>
+              </thead>
+              <tbody>
+                {logs.map(log => (
+                  <tr key={log.id} style={{ cursor: 'default' }}>
+                    <td>
+                      <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, background: `${ACTION_COLOR[log.action] || '#a1a1aa'}18`, color: ACTION_COLOR[log.action] || '#a1a1aa', border: `1px solid ${ACTION_COLOR[log.action] || '#a1a1aa'}40` }}>
+                        {log.action.replace(/_/g,' ')}
+                      </span>
+                    </td>
+                    <td><span className="chip">{log.recordType}</span></td>
+                    <td className="text-muted" style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{log.recordId.slice(0,8)}…</td>
+                    <td className="text-dim" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {log.newValue || log.oldValue || '—'}
+                    </td>
+                    <td>{log.user?.name || '—'}</td>
+                    <td className="text-muted">{new Date(log.timestamp).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -7,27 +7,80 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Auth Enums ──────────────────────────────────────────
 enum Role {
   USER
   ADMIN
+  ENGINEERING_USER
+  APPROVER
+  OPERATIONS_USER
 }
 
+// ─── PLM Enums ───────────────────────────────────────────
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum MakeOrBuy {
+  MAKE
+  BUY
+}
+
+enum ECOType {
+  PRODUCT
+  BOM
+}
+
+enum ChangeReason {
+  COST_REDUCTION
+  QUALITY_ISSUE
+  CUSTOMER_DEMAND
+  REGULATORY
+  DESIGN_UPDATE
+}
+
+enum RiskLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ECOStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  APPLIED
+}
+
+enum ApprovalCategory {
+  REQUIRED
+  OPTIONAL
+}
+
+// ─── Auth Models (DO NOT MODIFY) ─────────────────────────
 model User {
-  id              String         @id @default(uuid()) @db.Uuid
-  name            String         @db.VarChar(100)
-  email           String         @unique @db.VarChar(255)
-  password        String?        @db.VarChar(255)
-  avatar_url      String?        @db.Text
-  role            Role           @default(USER)
-  provider        String         @default("local") @db.VarChar(50)
-  provider_id     String?        @db.VarChar(255)
-  is_verified     Boolean        @default(false)
-  failed_attempts Int            @default(0)
-  locked_until    DateTime?      @db.Timestamptz
-  created_at      DateTime       @default(now()) @db.Timestamptz
-  updated_at      DateTime       @default(now()) @updatedAt @db.Timestamptz
+  id              String            @id @default(uuid()) @db.Uuid
+  name            String            @db.VarChar(100)
+  email           String            @unique @db.VarChar(255)
+  password        String?           @db.VarChar(255)
+  avatar_url      String?           @db.Text
+  role            Role              @default(USER)
+  provider        String            @default("local") @db.VarChar(50)
+  provider_id     String?           @db.VarChar(255)
+  is_verified     Boolean           @default(false)
+  failed_attempts Int               @default(0)
+  locked_until    DateTime?         @db.Timestamptz
+  created_at      DateTime          @default(now()) @db.Timestamptz
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamptz
   email_tokens    EmailToken[]
   refresh_tokens  RefreshToken[]
+  // PLM relations
+  ecos            ECO[]
+  audit_logs      AuditLog[]
+  notifications   Notification[]
+  approval_rules  ECOApprovalRule[]
 
   @@map("users")
 }
@@ -57,4 +110,163 @@ model RefreshToken {
   @@index([user_id], name: "idx_rt_user_id")
   @@index([token_hash], name: "idx_rt_token_hash")
   @@map("refresh_tokens")
+}
+
+// ─── PLM Models ───────────────────────────────────────────
+
+model Product {
+  id             String           @id @default(uuid()) @db.Uuid
+  name           String           @unique @db.VarChar(255)
+  salePrice      Decimal          @db.Decimal(15, 2)
+  costPrice      Decimal          @db.Decimal(15, 2)
+  attachments    String[]
+  currentVersion Int              @default(1)
+  status         ProductStatus    @default(ACTIVE)
+  created_at     DateTime         @default(now()) @db.Timestamptz
+  updated_at     DateTime         @default(now()) @updatedAt @db.Timestamptz
+  versions       ProductVersion[]
+  boms           BOM[]
+  ecos           ECO[]
+
+  @@map("products")
+}
+
+model ProductVersion {
+  id            String        @id @default(uuid()) @db.Uuid
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId     String        @db.Uuid
+  versionNumber Int
+  salePrice     Decimal       @db.Decimal(15, 2)
+  costPrice     Decimal       @db.Decimal(15, 2)
+  attachments   String[]
+  status        ProductStatus @default(ACTIVE)
+  created_at    DateTime      @default(now()) @db.Timestamptz
+
+  @@map("product_versions")
+}
+
+model BOM {
+  id            String        @id @default(uuid()) @db.Uuid
+  reference     String        @db.VarChar(8)
+  product       Product       @relation(fields: [productId], references: [id])
+  productId     String        @db.Uuid
+  versionNumber Int           @default(1)
+  status        ProductStatus @default(ACTIVE)
+  created_at    DateTime      @default(now()) @db.Timestamptz
+  components    BOMComponent[]
+  operations    BOMOperation[]
+  ecos          ECO[]
+
+  @@map("boms")
+}
+
+model BOMComponent {
+  id            String     @id @default(uuid()) @db.Uuid
+  bom           BOM        @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  bomId         String     @db.Uuid
+  componentName String     @db.VarChar(255)
+  quantity      Decimal    @db.Decimal(15, 4)
+  makeOrBuy     MakeOrBuy  @default(BUY)
+  supplier      String?    @db.VarChar(255)
+  unitCost      Decimal?   @db.Decimal(15, 2)
+
+  @@map("bom_components")
+}
+
+model BOMOperation {
+  id            String  @id @default(uuid()) @db.Uuid
+  bom           BOM     @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  bomId         String  @db.Uuid
+  operationName String  @db.VarChar(255)
+  durationMins  Int
+  workCenter    String  @db.VarChar(255)
+
+  @@map("bom_operations")
+}
+
+model ECOStage {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String            @db.VarChar(100)
+  orderIndex       Int
+  approvalRequired Boolean           @default(false)
+  created_at       DateTime          @default(now()) @db.Timestamptz
+  approval_rules   ECOApprovalRule[]
+  ecos             ECO[]
+
+  @@map("eco_stages")
+}
+
+model ECOApprovalRule {
+  id               String           @id @default(uuid()) @db.Uuid
+  stage            ECOStage         @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  stageId          String           @db.Uuid
+  user             User             @relation(fields: [userId], references: [id])
+  userId           String           @db.Uuid
+  approvalCategory ApprovalCategory @default(REQUIRED)
+
+  @@map("eco_approval_rules")
+}
+
+model ECO {
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String         @db.VarChar(255)
+  ecoType       ECOType
+  product       Product        @relation(fields: [productId], references: [id])
+  productId     String         @db.Uuid
+  bom           BOM?           @relation(fields: [bomId], references: [id])
+  bomId         String?        @db.Uuid
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String         @db.Uuid
+  effectiveDate DateTime?      @db.Timestamptz
+  versionUpdate Boolean        @default(true)
+  stage         ECOStage       @relation(fields: [stageId], references: [id])
+  stageId       String         @db.Uuid
+  changeReason  ChangeReason
+  riskLevel     RiskLevel
+  status        ECOStatus      @default(DRAFT)
+  created_at    DateTime       @default(now()) @db.Timestamptz
+  updated_at    DateTime       @default(now()) @updatedAt @db.Timestamptz
+  draftChanges  ECODraftChange[]
+
+  @@map("ecos")
+}
+
+model ECODraftChange {
+  id         String   @id @default(uuid()) @db.Uuid
+  eco        ECO      @relation(fields: [ecoId], references: [id], onDelete: Cascade)
+  ecoId      String   @db.Uuid
+  fieldName  String   @db.VarChar(100)
+  recordType String   @db.VarChar(50)
+  recordId   String   @db.VarChar(255)
+  oldValue   String?  @db.Text
+  newValue   String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  @@map("eco_draft_changes")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  action     String   @db.VarChar(255)
+  recordType String   @db.VarChar(100)
+  recordId   String   @db.VarChar(255)
+  oldValue   String?  @db.Text
+  newValue   String?  @db.Text
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @db.Uuid
+  timestamp  DateTime @default(now()) @db.Timestamptz
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  id         String   @id @default(uuid()) @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @db.Uuid
+  message    String   @db.Text
+  isRead     Boolean  @default(false)
+  link       String?  @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  @@map("notifications")
 }

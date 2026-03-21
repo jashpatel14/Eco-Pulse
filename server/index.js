@@ -6,6 +6,15 @@ const { securityHeaders } = require("./middleware/securityMiddleware");
 require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
+const productRoutes = require("./routes/products");
+const bomRoutes = require("./routes/boms");
+const stageRoutes = require("./routes/stages");
+const approvalRoutes = require("./routes/approvals");
+const ecoRoutes = require("./routes/ecos");
+const reportRoutes = require("./routes/reports");
+const auditRoutes = require("./routes/audit");
+const notificationRoutes = require("./routes/notifications");
+const userRoutes = require("./routes/users");
 const logger = require("./utils/logger");
 const prisma = require("./config/prisma");
 const redisClient = require("./config/redis");
@@ -43,6 +52,18 @@ app.use(cookieParser());
 
 // ─── Routes ─────────────────────────────────────────────
 app.use("/api/v1/auth", authRoutes);
+
+// ─── PLM Routes ──────────────────────────────────────────
+app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/boms", bomRoutes);
+app.use("/api/v1/stages", stageRoutes);
+app.use("/api/v1/approvals", approvalRoutes);
+app.use("/api/v1/ecos", ecoRoutes);
+app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/audit", auditRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/users", userRoutes);
+
 
 // ─── Health Check ────────────────────────────────────────
 app.get("/api/health", (req, res) => {

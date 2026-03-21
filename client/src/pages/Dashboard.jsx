@@ -1,294 +1,173 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { User, Shield, Zap, Clock, CheckCircle, AlertTriangle, Cpu } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useToast } from '../context/ToastContext';
+import { Package, ClipboardList, GitPullRequest, BarChart2, CheckCircle, AlertCircle, Clock, Zap, TrendingUp, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/api';
 
-const Dashboard = () => {
-  const { user, getProfile, changePassword, deleteAccount, logout } = useAuth();
-  const { addToast } = useToast();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // New states for account management
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+export default function Dashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const role = user?.role;
+  const [stats, setStats] = useState({
+    products: 0, boms: 0, ecos_total: 0,
+    ecos_draft: 0, ecos_in_review: 0, ecos_applied: 0, ecos_rejected: 0
+  });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await getProfile();
-        setProfile(data.user);
-      } catch (err) {
-        addToast('Failed to load profile details', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
-  }, [getProfile, addToast]);
+    Promise.all([
+      api.get('/products').catch(() => ({ data: [] })),
+      api.get('/boms').catch(() => ({ data: [] })),
+      api.get('/ecos').catch(() => ({ data: [] })),
+    ]).then(([prods, boms, ecos]) => {
+      const ecoData = ecos.data;
+      setStats({
+        products: prods.data.length,
+        boms: boms.data.length,
+        ecos_total: ecoData.length,
+        ecos_draft: ecoData.filter(e => e.status === 'DRAFT').length,
+        ecos_in_review: ecoData.filter(e => e.status === 'IN_REVIEW').length,
+        ecos_applied: ecoData.filter(e => e.status === 'APPLIED').length,
+        ecos_rejected: ecoData.filter(e => e.status === 'REJECTED').length,
+      });
+    });
+  }, []);
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (passwordData.new !== passwordData.confirm) {
-        return addToast('New passwords do not match', 'error');
-    }
-    setActionLoading(true);
-    try {
-        await changePassword(passwordData.current, passwordData.new);
-        addToast('Password changed successfully. Please login again.', 'success');
-        logout();
-    } catch (err) {
-        addToast(err.response?.data?.message || 'Failed to change password', 'error');
-    } finally {
-        setActionLoading(false);
-    }
+  const CARD_SETS = {
+    ENGINEERING_USER: [
+      { icon: Package, label: 'Active Products', value: stats.products, cls: 'stat-blue', nav: '/products' },
+      { icon: ClipboardList, label: 'Bills of Materials', value: stats.boms, cls: 'stat-purple', nav: '/boms' },
+      { icon: Clock, label: 'Draft ECOs', value: stats.ecos_draft, cls: 'stat-amber', nav: '/ecos' },
+      { icon: GitPullRequest, label: 'In Review', value: stats.ecos_in_review, cls: 'stat-blue', nav: '/ecos' },
+      { icon: CheckCircle, label: 'Applied ECOs', value: stats.ecos_applied, cls: 'stat-green', nav: '/ecos' },
+      { icon: AlertCircle, label: 'Rejected ECOs', value: stats.ecos_rejected, cls: 'stat-red', nav: '/ecos' },
+    ],
+    APPROVER: [
+      { icon: GitPullRequest, label: 'Awaiting Approval', value: stats.ecos_in_review, cls: 'stat-amber', nav: '/ecos' },
+      { icon: CheckCircle, label: 'Applied ECOs', value: stats.ecos_applied, cls: 'stat-green', nav: '/ecos' },
+      { icon: AlertCircle, label: 'Rejected ECOs', value: stats.ecos_rejected, cls: 'stat-red', nav: '/ecos' },
+      { icon: Package, label: 'Active Products', value: stats.products, cls: 'stat-blue', nav: '/products' },
+    ],
+    OPERATIONS_USER: [
+      { icon: Package, label: 'Active Products', value: stats.products, cls: 'stat-blue', nav: '/products' },
+      { icon: ClipboardList, label: 'Bills of Materials', value: stats.boms, cls: 'stat-purple', nav: '/boms' },
+      { icon: CheckCircle, label: 'Applied ECOs', value: stats.ecos_applied, cls: 'stat-green', nav: '/ecos' },
+    ],
+    ADMIN: [
+      { icon: Package, label: 'Products', value: stats.products, cls: 'stat-blue', nav: '/products' },
+      { icon: ClipboardList, label: 'BOMs', value: stats.boms, cls: 'stat-purple', nav: '/boms' },
+      { icon: GitPullRequest, label: 'Total ECOs', value: stats.ecos_total, cls: 'stat-amber', nav: '/ecos' },
+      { icon: Clock, label: 'In Review', value: stats.ecos_in_review, cls: 'stat-blue', nav: '/ecos' },
+      { icon: CheckCircle, label: 'Applied', value: stats.ecos_applied, cls: 'stat-green', nav: '/ecos' },
+      { icon: AlertCircle, label: 'Rejected', value: stats.ecos_rejected, cls: 'stat-red', nav: '/ecos' },
+    ],
+    USER: [
+      { icon: Package, label: 'Products', value: stats.products, cls: 'stat-blue', nav: '/products' },
+      { icon: ClipboardList, label: 'BOMs', value: stats.boms, cls: 'stat-purple', nav: '/boms' },
+    ],
   };
 
-  const handleDeleteAccount = async () => {
-    setActionLoading(true);
-    try {
-        await deleteAccount();
-        addToast('Account deleted. Goodbye!', 'success');
-        logout();
-    } catch (err) {
-        addToast(err.response?.data?.message || 'Failed to delete account', 'error');
-        setActionLoading(false);
-    }
-  };
+  const cards = CARD_SETS[role] || CARD_SETS['USER'];
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner"></div>
-        <p>Syncing your profile...</p>
-      </div>
-    );
-  }
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { y: 20, opacity: 0 },
-    show: { y: 0, opacity: 1 }
-  };
+  const QUICK_ACTIONS = [
+    { label: 'New Product', onClick: () => navigate('/products/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
+    { label: 'New BOM', onClick: () => navigate('/boms/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
+    { label: 'New ECO', onClick: () => navigate('/ecos/new'), roles: ['ENGINEERING_USER','ADMIN'], primary: true },
+    { label: 'View Reports', onClick: () => navigate('/reports'), roles: null, primary: false },
+    { label: 'Manage Settings', onClick: () => navigate('/settings'), roles: ['ADMIN'], primary: false },
+    { label: 'Audit Log', onClick: () => navigate('/audit'), roles: ['ADMIN'], primary: false },
+  ].filter(a => !a.roles || a.roles.includes(role));
 
   return (
-    <div className="dashboard-main">
-      <div className="bg-mesh" />
-      
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+    <div className="plm-page">
+      {/* Header */}
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1 className="page-title">
+            Good day, {user?.name?.split(' ')[0] || 'User'} 👋
+          </h1>
+          <p className="page-desc">
+            Here's an overview of your EcoPulse PLM workspace
+          </p>
+        </div>
+        <span style={{
+          background: 'var(--brand-soft)', color: 'var(--brand-primary)',
+          border: '1px solid #c7d2fe', borderRadius: 999,
+          padding: '4px 14px', fontSize: '0.78rem', fontWeight: 700
+        }}>
+          {role?.replace(/_/g, ' ')}
+        </span>
+      </div>
+
+      {/* Stat cards */}
+      <motion.div
+        className="stat-grid"
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="welcome-section"
+        transition={{ duration: 0.4 }}
       >
-        <h1 className="welcome-title">
-          Welcome, <span className="logo-accent">{profile?.name || user?.name}</span>
-        </h1>
-        <p style={{ color: 'var(--text-dim)', fontSize: '1.2rem' }}>Your Secure EcoPulse Dashboard</p>
+        {cards.map((card, i) => (
+          <motion.div
+            key={card.label}
+            className={`stat-card ${card.cls}`}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
+            onClick={() => navigate(card.nav)}
+          >
+            <div className="stat-icon-wrap">
+              <card.icon size={20} />
+            </div>
+            <div className="stat-value">{card.value}</div>
+            <div className="stat-label">{card.label}</div>
+          </motion.div>
+        ))}
       </motion.div>
 
-      <motion.div 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="premium-grid"
-      >
-        {/* Profile Card */}
-        <motion.div variants={item} className="pro-card">
-          <div className="card-icon"><User className="logo-accent" size={32} /></div>
-          <h3>Profile Info</h3>
-          <div className="profile-details">
-            <div className="detail-row">
-              <span className="detail-label">Full Name</span>
-              <span className="detail-value">{profile?.name || user?.name}</span>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">Email Address</span>
-              <span className="detail-value">{profile?.email || user?.email}</span>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">Status</span>
-              <span className={`badge ${profile?.is_verified ? 'badge-success' : 'badge-warning'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {profile?.is_verified ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
-                {profile?.is_verified ? 'Verified' : 'Pending'}
-              </span>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">Member Since</span>
-              <span className="detail-value">
-                {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric', month: 'long', day: 'numeric'
-                }) : 'N/A'}
-              </span>
-            </div>
+      {/* Quick Actions + Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 4 }}>
+        {/* Quick Actions */}
+        <motion.div className="glass-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <Zap size={18} style={{ color: 'var(--brand-primary)' }} />
+            <h3 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Quick Actions</h3>
+          </div>
+          <div className="quick-actions-grid">
+            {QUICK_ACTIONS.map(a => (
+              <button key={a.label} className={a.primary ? 'btn-plm btn-sm' : 'btn-outline btn-sm'} onClick={a.onClick}>
+                {a.label}
+              </button>
+            ))}
           </div>
         </motion.div>
 
-        {/* Security Card */}
-        <motion.div variants={item} className="pro-card">
-          <div className="card-icon"><Shield className="logo-accent" size={32} /></div>
-          <h3>Security Status</h3>
-          <div className="security-items">
-            {[
-              "JWT Authentication Active",
-              "Bcrypt Password Hashing",
-              "Validated Email Token",
-              "IP Rate Limiting Active"
-            ].map((text, i) => (
-              <div key={i} className="security-item" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '10px 15px', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
-                <CheckCircle size={16} style={{ color: '#4ade80', marginRight: '10px' }} />
-                <span>{text}</span>
+        {/* Summary card */}
+        <motion.div className="glass-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <TrendingUp size={18} style={{ color: '#059669' }} />
+            <h3 style={{ fontWeight: 700, fontSize: '0.95rem' }}>ECO Pipeline</h3>
+          </div>
+          {[
+            { label: 'Draft', value: stats.ecos_draft, color: '#d97706', pct: stats.ecos_total ? Math.round(stats.ecos_draft / stats.ecos_total * 100) : 0 },
+            { label: 'In Review', value: stats.ecos_in_review, color: '#2563eb', pct: stats.ecos_total ? Math.round(stats.ecos_in_review / stats.ecos_total * 100) : 0 },
+            { label: 'Applied', value: stats.ecos_applied, color: '#059669', pct: stats.ecos_total ? Math.round(stats.ecos_applied / stats.ecos_total * 100) : 0 },
+            { label: 'Rejected', value: stats.ecos_rejected, color: '#e11d48', pct: stats.ecos_total ? Math.round(stats.ecos_rejected / stats.ecos_total * 100) : 0 },
+          ].map(item => (
+            <div key={item.label} style={{ marginBottom: 12 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', marginBottom:4 }}>
+                <span style={{ color: 'var(--text-dim)', fontWeight: 500 }}>{item.label}</span>
+                <span style={{ color: item.color, fontWeight: 700 }}>{item.value}</span>
               </div>
-            ))}
-          </div>
+              <div style={{ height: 6, background: '#f3f4f6', borderRadius: 999 }}>
+                <div style={{ height: 6, background: item.color, borderRadius: 999, width: `${item.pct}%`, transition: 'width 0.5s ease' }} />
+              </div>
+            </div>
+          ))}
+          <button className="btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => navigate('/ecos')}>
+            View all ECOs <ArrowRight size={13} />
+          </button>
         </motion.div>
-
-        {/* Tech Stack Card */}
-        <motion.div variants={item} className="pro-card">
-          <div className="card-icon"><Cpu className="logo-accent" size={32} /></div>
-          <h3>System Core</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
-            {['PostgreSQL', 'Express', 'React', 'Node.js', 'Framer Motion', 'Lucide'].map((tech) => (
-              <span key={tech} className="btn btn-ghost" style={{ padding: '8px 16px', fontSize: '0.8rem', cursor: 'default' }}>
-                {tech}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Session Card */}
-        <motion.div variants={item} className="pro-card">
-          <div className="card-icon"><Clock className="logo-accent" size={32} /></div>
-          <h3>Active Session</h3>
-          <div className="profile-details">
-            <div className="detail-row">
-              <span className="detail-label">Auth Method</span>
-              <span className="detail-value">JWT Bearer</span>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">Expiration</span>
-              <span className="detail-value">15 Minutes</span>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">Status</span>
-              <span className="badge badge-success" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Zap size={14} /> Active
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Security & Settings Card */}
-        <motion.div variants={item} className="pro-card" style={{ gridColumn: '1 / -1' }}>
-          <div className="card-icon"><Shield className="logo-accent" size={32} /></div>
-          <h3>Security & Account Settings</h3>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginTop: '20px' }}>
-            {/* Change Password Form */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-light)' }}>
-              <h4 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={18} className="logo-accent" /> Change Password
-              </h4>
-              <form onSubmit={handleChangePassword}>
-                <div className="form-field">
-                  <label>Current Password</label>
-                  <div className="input-group">
-                    <input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={passwordData.current}
-                      onChange={(e) => setPasswordData({...passwordData, current: e.target.value})}
-                      required 
-                    />
-                  </div>
-                </div>
-                <div className="form-field">
-                  <label>New Password</label>
-                  <div className="input-group">
-                    <input 
-                      type="password" 
-                      placeholder="Min. 8 chars" 
-                      value={passwordData.new}
-                      onChange={(e) => setPasswordData({...passwordData, new: e.target.value})}
-                      required 
-                    />
-                  </div>
-                </div>
-                <div className="form-field" style={{ marginBottom: '16px' }}>
-                  <label>Confirm New Password</label>
-                  <div className="input-group">
-                    <input 
-                      type="password" 
-                      placeholder="Re-enter password" 
-                      value={passwordData.confirm}
-                      onChange={(e) => setPasswordData({...passwordData, confirm: e.target.value})}
-                      required 
-                    />
-                  </div>
-                </div>
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={actionLoading}>
-                  {actionLoading ? 'Updating...' : 'Update Password'}
-                </button>
-              </form>
-            </div>
-
-            {/* Danger Zone */}
-            <div style={{ background: 'rgba(239, 68, 68, 0.05)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-              <h4 style={{ marginBottom: '16px', color: '#ff8080', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertTriangle size={18} /> Danger Zone
-              </h4>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '20px' }}>
-                Once you delete your account, there is no going back. Please be certain.
-              </p>
-              
-              {!showDeleteConfirm ? (
-                <button 
-                  onClick={() => setShowDeleteConfirm(true)} 
-                  className="btn" 
-                  style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ff8080', width: '100%', border: '1px solid rgba(239, 68, 68, 0.3)' }}
-                >
-                  Delete My Account
-                </button>
-              ) : (
-                <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontWeight: '700', color: '#ff8080', marginBottom: '12px' }}>Are you absolutely sure?</p>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button 
-                      onClick={handleDeleteAccount} 
-                      className="btn" 
-                      style={{ background: '#ef4444', color: 'white', flex: 1 }}
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? 'Deleting...' : 'Yes, Delete'}
-                    </button>
-                    <button 
-                      onClick={() => setShowDeleteConfirm(false)} 
-                      className="btn btn-ghost" 
-                      style={{ flex: 1 }}
-                      disabled={actionLoading}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

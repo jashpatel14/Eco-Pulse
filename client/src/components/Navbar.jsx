@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Shield, LayoutDashboard, LogOut } from 'lucide-react';
+import { Shield, LogOut } from 'lucide-react';
+import NotificationPanel from './NotificationPanel';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -16,21 +17,15 @@ const Navbar = () => {
         <div className="navbar-links">
           {!user ? (
             <>
-              <Link to="/login" className="btn btn-ghost">
-                Login
-              </Link>
-              <Link to="/register" className="btn btn-primary">
-                Get Started
-              </Link>
+              <Link to="/login" className="btn btn-ghost">Login</Link>
+              <Link to="/register" className="btn btn-primary">Get Started</Link>
             </>
           ) : (
             <>
+              <NotificationPanel />
               <span className="navbar-greeting">
                 Hello, <strong>{user.name}</strong>
               </span>
-              <Link to="/dashboard" className="btn btn-ghost">
-                <LayoutDashboard size={18} /> Dashboard
-              </Link>
               <button onClick={logout} className="btn btn-ghost" id="nav-logout">
                 <LogOut size={18} /> Logout
               </button>
