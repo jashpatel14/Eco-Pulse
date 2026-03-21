@@ -2,8 +2,75 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Hash, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Hash, User, ArrowRight, GitMerge, BarChart3, ShieldCheck, Zap } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+
+const brand = '#ed8080';
+
+const FEATURES = [
+  { icon: <GitMerge size={14} />, text: 'Full ECO lifecycle management' },
+  { icon: <BarChart3 size={14} />, text: 'Real-time dashboard analytics' },
+  { icon: <ShieldCheck size={14} />, text: 'Role-based access control' },
+  { icon: <Zap size={14} />, text: 'BOM version history & audit logs' },
+];
+
+function BrandPanel({ title }) {
+  return (
+    <div style={{
+      width: '400px', minWidth: '400px', display: 'flex', flexDirection: 'column',
+      padding: '48px 44px', position: 'relative', overflow: 'hidden',
+      background: 'linear-gradient(160deg, #2d1515 0%, #1a0a0a 60%, #1e1010 100%)',
+    }}>
+      {/* Glow orbs */}
+      <div style={{ position: 'absolute', top: '-120px', left: '-120px', width: '380px', height: '380px', background: `radial-gradient(circle, ${brand}20 0%, transparent 60%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-80px', right: '-80px', width: '280px', height: '280px', background: `radial-gradient(circle, ${brand}12 0%, transparent 60%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginBottom: '52px' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '11px', background: brand, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px', color: 'white', boxShadow: `0 4px 16px ${brand}50`, flexShrink: 0 }}>EP</div>
+        <div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', lineHeight: 1.2 }}>EcoPulse</div>
+          <div style={{ fontSize: '0.67rem', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Product Lifecycle Management</div>
+        </div>
+      </div>
+
+      {/* Headline */}
+      <div style={{ flex: 1 }}>
+        {title || (
+          <>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', lineHeight: 1.25, letterSpacing: '-0.03em', margin: '0 0 12px' }}>
+              Engineering <span style={{ color: brand }}>change</span><br />at every stage.
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', lineHeight: 1.7, margin: '0 0 36px' }}>
+              The PLM platform built for modern engineering teams — track, approve and ship product changes with confidence.
+            </p>
+          </>
+        )}
+
+        {/* Feature pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {FEATURES.map((f, i) => (
+            <div key={i} style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+              borderRadius: '100px', padding: '6px 12px',
+              color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 500,
+            }}>
+              <span style={{ color: brand, display: 'flex' }}>{f.icon}</span>
+              {f.text}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom status */}
+      <div style={{ marginTop: '40px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e', flexShrink: 0 }} />
+        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem', fontWeight: 500 }}>All systems operational</span>
+      </div>
+    </div>
+  );
+}
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -55,81 +122,18 @@ const Auth = () => {
     }
   };
 
-  const brand = '#ed8080';
-  const brandDark = '#d96b6b';
-
-  const S = {
-    page: { minHeight: '100vh', display: 'flex', fontFamily: "'Inter', system-ui, sans-serif" },
-    panel: {
-      width: '420px', minWidth: '420px', display: 'flex', flexDirection: 'column',
-      justifyContent: 'center', padding: '56px 48px', position: 'relative', overflow: 'hidden',
-      background: `linear-gradient(160deg, #2d1515 0%, #1a0a0a 50%, #1e1010 100%)`,
-    },
-    formSide: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', background: '#fafbff' },
-    label: { display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '7px' },
-    input: { width: '100%', height: '46px', padding: '0 14px 0 42px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#ffffff', fontSize: '0.925rem', color: '#1e293b', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
-    select: { width: '100%', height: '46px', padding: '0 36px 0 42px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#ffffff', fontSize: '0.925rem', color: '#1e293b', outline: 'none', boxSizing: 'border-box', appearance: 'none', cursor: 'pointer', fontFamily: 'inherit' },
-  };
+  const inputStyle = { width: '100%', height: '46px', padding: '0 14px 0 42px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#ffffff', fontSize: '0.925rem', color: '#1e293b', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' };
+  const labelStyle = { display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '7px' };
 
   return (
-    <div style={S.page}>
-      {/* ─── Left Brand Panel ─── */}
-      <div style={S.panel}>
-        {/* Glow orbs */}
-        <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '350px', height: '350px', background: `radial-gradient(circle, ${brand}22 0%, transparent 65%)`, borderRadius: '50%', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-80px', right: '-80px', width: '280px', height: '280px', background: `radial-gradient(circle, ${brand}15 0%, transparent 65%)`, borderRadius: '50%', pointerEvents: 'none' }} />
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <BrandPanel />
 
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '48px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: brand, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '15px', color: 'white', boxShadow: `0 6px 18px ${brand}55`, flexShrink: 0 }}>EP</div>
-          <div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>EcoPulse</div>
-            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>Product Lifecycle Management</div>
-          </div>
-        </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', background: '#fafbff' }}>
+        <motion.div style={{ width: '100%', maxWidth: '440px' }} key={isRegister ? 'r' : 'l'} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
 
-        {/* Headline */}
-        <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'white', lineHeight: 1.2, letterSpacing: '-0.04em', marginBottom: '16px' }}>
-          Engineering<br />
-          <span style={{ color: brand }}>change</span> at<br />
-          every stage.
-        </h2>
-
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.875rem', lineHeight: 1.75, marginBottom: '40px' }}>
-          The PLM platform built for modern engineering teams — track, approve and ship product changes with confidence.
-        </p>
-
-        {/* Divider */}
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', marginBottom: '28px' }} />
-
-        {/* Key points — simple, clean */}
-        {[
-          'Full ECO lifecycle management',
-          'Real-time dashboard analytics',
-          'Role-based access control',
-          'BOM version history & audit logs',
-        ].map((item, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: brand, flexShrink: 0 }} />
-            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem', fontWeight: 500 }}>{item}</span>
-          </div>
-        ))}
-
-        {/* Status dot at bottom */}
-        <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '100px', padding: '7px 14px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 5px #22c55e' }} />
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.74rem', fontWeight: 600 }}>All systems operational</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Right Form Panel ─── */}
-      <div style={S.formSide}>
-        <motion.div style={{ width: '100%', maxWidth: '440px' }} key={isRegister ? 'register' : 'login'} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28 }}>
-
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', marginBottom: '6px' }}>
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '1.7rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em', marginBottom: '6px' }}>
               {isRegister ? 'Create your account' : 'Sign in to EcoPulse'}
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
@@ -137,21 +141,20 @@ const Auth = () => {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-
-            <div style={{ display: 'grid', gridTemplateColumns: isRegister ? '1fr 1fr' : '1fr', gap: '14px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '17px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isRegister ? '1fr 1fr' : '1fr', gap: '13px' }}>
               <div>
-                <label style={S.label}>Login ID</label>
+                <label style={labelStyle}>Login ID</label>
                 <div style={{ position: 'relative' }}>
-                  <input name="loginId" placeholder={isRegister ? 'e.g. jash2901' : 'Your login ID'} value={formData.loginId} onChange={handleChange} required style={S.input} />
+                  <input name="loginId" placeholder={isRegister ? 'e.g. jash2901' : 'Your login ID'} value={formData.loginId} onChange={handleChange} required style={inputStyle} />
                   <Hash size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 </div>
               </div>
               {isRegister && (
                 <div>
-                  <label style={S.label}>Project Role</label>
+                  <label style={labelStyle}>Project Role</label>
                   <div style={{ position: 'relative' }}>
-                    <select name="role" value={formData.role} onChange={handleChange} style={S.select}>
+                    <select name="role" value={formData.role} onChange={handleChange} style={{ ...inputStyle, padding: '0 36px 0 42px', appearance: 'none', cursor: 'pointer' }}>
                       <option value="ENGINEERING_USER">Engineer</option>
                       <option value="APPROVER">Approver</option>
                       <option value="OPERATIONS_USER">Operations</option>
@@ -167,19 +170,19 @@ const Auth = () => {
 
             {isRegister && (
               <div>
-                <label style={S.label}>Email Address</label>
+                <label style={labelStyle}>Email Address</label>
                 <div style={{ position: 'relative' }}>
-                  <input name="email" type="email" placeholder="name@company.com" value={formData.email} onChange={handleChange} required style={S.input} />
+                  <input name="email" type="email" placeholder="name@company.com" value={formData.email} onChange={handleChange} required style={inputStyle} />
                   <Mail size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: isRegister ? '1fr 1fr' : '1fr', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isRegister ? '1fr 1fr' : '1fr', gap: '13px' }}>
               <div>
-                <label style={S.label}>Password</label>
+                <label style={labelStyle}>Password</label>
                 <div style={{ position: 'relative' }}>
-                  <input name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.password} onChange={handleChange} required style={{ ...S.input, paddingRight: '42px' }} />
+                  <input name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.password} onChange={handleChange} required style={{ ...inputStyle, paddingRight: '42px' }} />
                   <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex' }}>
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -188,9 +191,9 @@ const Auth = () => {
               </div>
               {isRegister && (
                 <div>
-                  <label style={S.label}>Confirm Password</label>
+                  <label style={labelStyle}>Confirm Password</label>
                   <div style={{ position: 'relative' }}>
-                    <input name="rePassword" type="password" placeholder="••••••••" value={formData.rePassword} onChange={handleChange} required style={S.input} />
+                    <input name="rePassword" type="password" placeholder="••••••••" value={formData.rePassword} onChange={handleChange} required style={inputStyle} />
                     <Lock size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                   </div>
                 </div>
@@ -198,25 +201,17 @@ const Auth = () => {
             </div>
 
             {!isRegister && (
-              <div style={{ textAlign: 'right', marginTop: '-6px' }}>
+              <div style={{ textAlign: 'right', marginTop: '-4px' }}>
                 <Link to="/forgot-password" style={{ fontSize: '0.82rem', color: brand, fontWeight: 600, textDecoration: 'none' }}>Forgot password?</Link>
               </div>
             )}
 
-            <button type="submit" disabled={loading} style={{
-              width: '100%', height: '50px', borderRadius: '12px', border: 'none', fontWeight: 700,
-              fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              background: loading ? '#f0a0a0' : brand,
-              color: 'white',
-              boxShadow: loading ? 'none' : `0 8px 22px ${brand}55`,
-              marginTop: '4px'
-            }}>
+            <button type="submit" disabled={loading} style={{ width: '100%', height: '50px', borderRadius: '12px', border: 'none', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: loading ? '#f0a0a0' : brand, color: 'white', boxShadow: loading ? 'none' : `0 6px 20px ${brand}50`, marginTop: '4px' }}>
               {loading ? 'Processing...' : (isRegister ? 'Create Account' : 'Sign In')}
               {!loading && <ArrowRight size={16} />}
             </button>
 
-            <p style={{ textAlign: 'center', fontSize: '0.875rem', color: '#94a3b8', marginTop: '4px' }}>
+            <p style={{ textAlign: 'center', fontSize: '0.875rem', color: '#94a3b8', marginTop: '2px' }}>
               {isRegister ? 'Already have an account? ' : "Don't have an account? "}
               <button type="button" onClick={() => navigate(isRegister ? '/login' : '/register')} style={{ background: 'none', border: 'none', color: brand, fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', padding: 0, fontFamily: 'inherit' }}>
                 {isRegister ? 'Sign In' : 'Sign Up'}
