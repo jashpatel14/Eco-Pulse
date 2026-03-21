@@ -233,28 +233,24 @@ const Auth = () => {
               </div>
             </div>
 
-            {isRegister && (
-              <div className="form-field">
-                <label className="plm-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: '#475569', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Confirm</label>
-                <div style={{ position: 'relative' }}>
-                  <input 
-                    name="rePassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.rePassword}
-                    onChange={handleChange}
-                    required
-                    style={{ 
-                      padding: '0 16px 0 40px', width: '100%', height: '44px', borderRadius: '8px', 
-                      border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.95rem', color: '#1e293b', 
-                      outline: 'none', boxSizing: 'border-box'
-                    }}
-                  />
-                  <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                </div>
+          {isRegister && (
+            <div className="form-field">
+              <label className="plm-label">Re-Enter Password</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  className="plm-input"
+                  name="rePassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.rePassword}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingLeft: '40px' }}
+                />
+                <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <button 
             type="submit" 

@@ -32,6 +32,10 @@ const register = async (req, res) => {
       });
     }
 
+    // Role Validation (Exclude ADMIN for security)
+    const validRoles = ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER"];
+    const assignedRole = validRoles.includes(role) ? role : "ENGINEERING_USER";
+
     // 2. Check Uniqueness
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -60,7 +64,7 @@ const register = async (req, res) => {
         email,
         password: hashedPassword,
         name: loginId, // Use loginId as default name
-        role: assignedRole,
+        role: "ENGINEERING_USER", // Default role per spec
         is_verified: true, // Auto-verify for now as per previous simplification context but keeping it safe
       }
     });
