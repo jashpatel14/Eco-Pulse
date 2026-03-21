@@ -9,6 +9,8 @@ const {
   register,
   login,
   getProfile,
+  changePassword,
+  deleteAccount
 } = require("../controllers/authController");
 
 const router = express.Router();
@@ -33,5 +35,7 @@ router.post("/login", loginValidator, validate, login);
 
 // ─── Protected Routes ────────────────────────────────────
 router.get("/profile", authMiddleware, getProfile);
+router.post("/change-password", authMiddleware, changePassword);
+router.delete("/account", authMiddleware, deleteAccount);
 
 module.exports = router;

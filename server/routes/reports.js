@@ -5,104 +5,108 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
-// GET /api/v1/reports/ecos
-router.get("/ecos", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
+// GET /api/v1/reports/eco-summary
+router.get("/eco-summary", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const ecos = await prisma.eCO.findMany({
       include: {
         product: { select: { name: true } },
         user: { select: { name: true } },
         stage: { select: { name: true } },
-        draftChanges: true,
+        _count: { select: { draftChanges: true } }
       },
-      orderBy: { created_at: "desc" },
+      orderBy: { created_at: 'desc' }
     });
-    res.json(ecos);
+
+    const stats = {
+      total: ecos.length,
+      draft: ecos.filter(e => e.status === 'DRAFT').length,
+      inReview: ecos.filter(e => e.status === 'IN_REVIEW').length,
+      applied: ecos.filter(e => e.status === 'APPLIED').length,
+      rejected: ecos.filter(e => e.status === 'REJECTED').length,
+    };
+
+    res.json({ stats, ecos });
   } catch (err) {
-    logger.error("GET /reports/ecos error:", err);
-    res.status(500).json({ message: "Failed to fetch ECO report." });
+    logger.error("GET /reports/eco-summary error:", err);
+    res.status(500).json({ message: "Failed to fetch ECO summary." });
   }
 });
 
-// GET /api/v1/reports/versions?productId=xxx
-router.get("/versions", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
+// GET /api/v1/reports/product-history/:productId
+router.get("/product-history/:productId", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
-    const { productId } = req.query;
-    const where = productId ? { productId } : {};
     const versions = await prisma.productVersion.findMany({
-      where,
-      include: { product: { select: { name: true } } },
-      orderBy: { versionNumber: "desc" },
+      where: { productId: req.params.productId },
+      include: {
+        product: { select: { name: true } }
+      },
+      orderBy: { versionNumber: 'desc' }
     });
-    res.json(versions);
+
+    // Also get ECOs that affected this product and were APPLIED
+    const ecos = await prisma.eCO.findMany({
+      where: { productId: req.params.productId, status: 'APPLIED' },
+      include: {
+        user: { select: { name: true } }
+      },
+      orderBy: { updated_at: 'desc' }
+    });
+
+    res.json({ versions, ecos });
   } catch (err) {
-    logger.error("GET /reports/versions error:", err);
-    res.status(500).json({ message: "Failed to fetch version report." });
+    logger.error("GET /reports/product-history error:", err);
+    res.status(500).json({ message: "Failed to fetch product history." });
   }
 });
 
-// GET /api/v1/reports/bom-history?productId=xxx
-router.get("/bom-history", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
+// GET /api/v1/reports/bom-history/:bomId
+router.get("/bom-history/:bomId", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
-    const { productId } = req.query;
-    const where = productId ? { productId } : {};
-    const boms = await prisma.bOM.findMany({
-      where,
-      include: {
-        product: { select: { name: true } },
-        components: true,
-        operations: true,
+    const auditLogs = await prisma.auditLog.findMany({
+      where: { 
+        OR: [
+          { recordType: 'BOM', recordId: req.params.bomId },
+          { recordType: 'BOM_COMPONENT', recordId: { contains: req.params.bomId } } // Approximation
+        ]
       },
-      orderBy: { versionNumber: "desc" },
+      include: { user: { select: { name: true } } },
+      orderBy: { timestamp: 'desc' }
     });
-    res.json(boms);
+
+    res.json(auditLogs);
   } catch (err) {
     logger.error("GET /reports/bom-history error:", err);
-    res.status(500).json({ message: "Failed to fetch BOM history report." });
+    res.status(500).json({ message: "Failed to fetch BOM history." });
   }
 });
 
-// GET /api/v1/reports/archived
-router.get("/archived", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
-  try {
-    const archived = await prisma.productVersion.findMany({
-      where: { status: "ARCHIVED" },
-      include: { product: { select: { name: true } } },
-      orderBy: { created_at: "desc" },
-    });
-    res.json(archived);
-  } catch (err) {
-    logger.error("GET /reports/archived error:", err);
-    res.status(500).json({ message: "Failed to fetch archived products report." });
-  }
-});
-
-// GET /api/v1/reports/matrix — Active Product-Version-BoM Matrix
-router.get("/matrix", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
+// GET /api/v1/reports/matrix
+router.get("/matrix", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN", "OPERATIONS_USER"), async (req, res) => {
   try {
     const products = await prisma.product.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: 'ACTIVE' },
       include: {
-        versions: { where: { status: "ACTIVE" }, orderBy: { versionNumber: "desc" }, take: 1 },
-        boms: { where: { status: "ACTIVE" }, orderBy: { versionNumber: "desc" }, take: 1 },
-      },
+        boms: {
+          where: { status: 'ACTIVE' },
+          include: {
+            components: true
+          }
+        }
+      }
     });
 
-    const matrix = products
-      .filter((p) => p.boms.length > 0)
-      .map((p) => ({
-        productId: p.id,
-        productName: p.name,
-        activeVersion: p.versions[0]?.versionNumber ?? p.currentVersion,
-        activeBomReference: p.boms[0]?.reference ?? null,
-        activeBomVersion: p.boms[0]?.versionNumber ?? null,
-        lastChanged: p.updated_at,
-      }));
+    const matrix = products.map(p => ({
+      productId: p.id,
+      productName: p.name,
+      currentVersion: p.currentVersion,
+      activeBOM: p.boms[0] || null
+    }));
 
     res.json(matrix);
   } catch (err) {
     logger.error("GET /reports/matrix error:", err);
-    res.status(500).json({ message: "Failed to fetch matrix report." });
+    res.status(500).json({ message: "Failed to fetch product matrix." });
   }
 });
 

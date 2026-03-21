@@ -33,9 +33,14 @@ app.use(
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
-      if (whitelist.indexOf(origin) !== -1) {
+      if (
+        whitelist.indexOf(origin) !== -1 || 
+        origin.startsWith("http://localhost") || 
+        origin.startsWith("http://127.0.0.1")
+      ) {
         callback(null, true);
       } else {
+        logger.error(`CORS blocked request from origin: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },

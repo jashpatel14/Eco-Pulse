@@ -7,6 +7,8 @@ import PrivateRoute from './components/PrivateRoute';
 // Auth Pages
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import LandingPage from './pages/Landing/LandingPage';
+import Profile from './pages/Profile/Profile';
 
 // PLM Pages
 import ProductList   from './pages/Products/ProductList';
@@ -40,7 +42,6 @@ function AppLayout({ children }) {
         <div className="app-main" style={{ 
           flex: 1, 
           padding: '24px', 
-          transition: 'margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
           marginLeft: sidebarOpen ? 'var(--sidebar-w)' : '0'
         }}>
           {children}
@@ -53,7 +54,8 @@ function AppLayout({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Auth Routes */}
+      {/* Public Routes */}
+      <Route path="/"         element={<LandingPage />} />
       <Route path="/login"    element={<Auth />} />
       <Route path="/register" element={<Auth />} />
 
@@ -63,7 +65,7 @@ function AppRoutes() {
           <AppLayout>
             <Routes>
               <Route path="dashboard"     element={<Dashboard />} />
-              <Route path="profile"       element={<ProfilePage />} />
+              <Route path="profile"       element={<Profile />} />
 
               <Route path="products"      element={<ProductList />} />
               <Route path="products/new"  element={<ProductForm />} />

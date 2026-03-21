@@ -307,7 +307,6 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   color: var(--text-dim);
   text-decoration: none;
   font-size: 0.9rem; font-weight: 500;
-  transition: all var(--ts);
   position: relative;
   cursor: pointer;
   margin-bottom: 4px;
@@ -341,7 +340,6 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   background: var(--bg-page);
   border: 1px solid var(--border-light);
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 .sidebar-user-pill:hover { background: var(--bg-hover); border-color: var(--border-medium); }
 .sidebar-avatar {

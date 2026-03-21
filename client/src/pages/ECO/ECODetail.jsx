@@ -123,6 +123,9 @@ export default function ECODetail() {
           )}
           {canEdit && (
             <>
+               <button className="btn-plm" onClick={() => navigate(`/ecos/new?id=${id}`)} style={{ backgroundColor: 'var(--brand)' }}>
+                   Edit Info
+               </button>
                <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-product`)}>
                   Edit Product
                </button>

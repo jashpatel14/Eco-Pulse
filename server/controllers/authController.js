@@ -9,9 +9,13 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "24h";
 // ─── Register ────────────────────────────────────────────
 const register = async (req, res) => {
   try {
-    const { loginId, email, password } = req.body;
+    const { loginId, email, password, role } = req.body;
 
-    // 1. Validation Logic
+    // Default to Engineer if missing or invalid
+    let assignedRole = "ENGINEERING_USER";
+    if (role && ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER"].includes(role)) {
+      assignedRole = role;
+    }
     if (!loginId || loginId.length < 6 || loginId.length > 12) {
       return res.status(400).json({ message: "Login ID must be between 6 and 12 characters." });
     }
@@ -56,7 +60,7 @@ const register = async (req, res) => {
         email,
         password: hashedPassword,
         name: loginId, // Use loginId as default name
-        role: "ENGINEERING_USER", // Default role per spec
+        role: assignedRole,
         is_verified: true, // Auto-verify for now as per previous simplification context but keeping it safe
       }
     });
@@ -147,8 +151,64 @@ const getProfile = async (req, res) => {
   }
 };
 
+// ─── Account Management ───────────────────────────────────
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ message: "Fields required" });
+    
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validPassword) return res.status(401).json({ message: "Invalid current password" });
+    
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,})/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ 
+        message: "Password must be at least 8 characters long, contains at least one uppercase letter, one lowercase letter, and one special character." 
+      });
+    }
+
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword }
+    });
+    
+    logger.info(`User changed password: ${user.loginId}`);
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    logger.error("Change password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Transactionally wipe everything associated with this user to satisfy foreign key rules
+    await prisma.$transaction([
+      prisma.notification.deleteMany({ where: { userId } }),
+      prisma.eCOApprovalRule.deleteMany({ where: { userId } }),
+      prisma.eCODraftChange.deleteMany({ where: { eco: { userId } } }),
+      prisma.eCO.deleteMany({ where: { userId } }),
+      prisma.auditLog.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } })
+    ]);
+    
+    logger.info(`User account deleted: ${userId}`);
+    res.json({ message: "Account entirely removed from EcoPulse" });
+  } catch (error) {
+    logger.error("Delete account error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   register,
   login,
-  getProfile
+  getProfile,
+  changePassword,
+  deleteAccount
 };

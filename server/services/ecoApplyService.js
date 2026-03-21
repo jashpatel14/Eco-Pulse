@@ -75,7 +75,30 @@ const applyECO = async (ecoId) => {
           data: { status: "ARCHIVED" },
         });
 
-        // Update product's currentVersion
+        // Update product's currentVersion and create new Product Version History
+        const currentProductVersion = eco.product.versions.find(
+          (v) => v.status === "ACTIVE"
+        );
+        
+        if (currentProductVersion) {
+            // New version row
+            await tx.productVersion.create({
+              data: {
+                productId: eco.productId,
+                versionNumber: newVersionNumber,
+                salePrice: currentProductVersion.salePrice,
+                costPrice: currentProductVersion.costPrice,
+                attachments: [...currentProductVersion.attachments],
+                status: "ACTIVE",
+              },
+            });
+            // Archive old version
+            await tx.productVersion.update({
+              where: { id: currentProductVersion.id },
+              data: { status: "ARCHIVED" },
+            });
+        }
+
         await tx.product.update({
           where: { id: eco.productId },
           data: { currentVersion: newVersionNumber },
@@ -194,6 +217,9 @@ async function _applyBomDraftChanges(tx, bomId, draftChanges) {
         await tx.bOMComponent.create({ data: { bomId, ...data } });
       } else if (action === "UPDATE") {
         const data = JSON.parse(change.newValue);
+        delete data.id;
+        delete data.bomId;
+        delete data._id;
         await tx.bOMComponent.updateMany({
           where: { bomId, componentName: change.recordId },
           data,
@@ -210,6 +236,9 @@ async function _applyBomDraftChanges(tx, bomId, draftChanges) {
         await tx.bOMOperation.create({ data: { bomId, ...data } });
       } else if (action === "UPDATE") {
         const data = JSON.parse(change.newValue);
+        delete data.id;
+        delete data.bomId;
+        delete data._id;
         await tx.bOMOperation.updateMany({
           where: { bomId, operationName: change.recordId },
           data,

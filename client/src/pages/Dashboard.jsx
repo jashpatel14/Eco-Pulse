@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Package, ClipboardList, GitPullRequest, BarChart2, CheckCircle, AlertCircle, Clock, Zap, TrendingUp, ArrowRight } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
 
@@ -84,7 +85,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-title">
-            Good day, {user?.name?.split(' ')[0] || 'User'} 👋
+            Good day, {user?.name || 'User'} 👋
           </h1>
           <p className="page-desc">
             Here's an overview of your EcoPulse PLM workspace
@@ -169,31 +170,65 @@ export default function Dashboard() {
             </div>
             <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>ECO Pipeline</h3>
           </div>
-          {[
-            { label: 'Draft', value: stats.ecos_draft, color: '#d97706', bg: '#fffbeb' },
-            { label: 'In Review', value: stats.ecos_in_review, color: '#2563eb', bg: '#eff6ff' },
-            { label: 'Applied', value: stats.ecos_applied, color: '#059669', bg: '#ecfdf5' },
-            { label: 'Rejected', value: stats.ecos_rejected, color: '#e11d48', bg: '#fff1f2' },
-          ].map(item => {
-            const pct = stats.ecos_total ? Math.round((item.value / stats.ecos_total) * 100) : 0;
-            return (
-              <div key={item.label} style={{ marginBottom: 16 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.82rem', marginBottom:6 }}>
-                  <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>{item.label}</span>
-                  <span style={{ color: item.color, fontWeight: 700 }}>{item.value} ({pct}%)</span>
-                </div>
-                <div style={{ height: 8, background: 'var(--bg-page)', borderRadius: 999, overflow: 'hidden' }}>
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    style={{ height: '100%', background: item.color, borderRadius: 999 }} 
+
+          <div style={{ width: '100%', height: 200 }}>
+            {stats.ecos_total > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Draft', value: stats.ecos_draft, color: '#d97706' },
+                      { name: 'In Review', value: stats.ecos_in_review, color: '#2563eb' },
+                      { name: 'Applied', value: stats.ecos_applied, color: '#059669' },
+                      { name: 'Rejected', value: stats.ecos_rejected, color: '#e11d48' },
+                    ].filter(d => d.value > 0)}
+                    innerRadius={65}
+                    outerRadius={85}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {[
+                      { name: 'Draft', value: stats.ecos_draft, color: '#d97706' },
+                      { name: 'In Review', value: stats.ecos_in_review, color: '#2563eb' },
+                      { name: 'Applied', value: stats.ecos_applied, color: '#059669' },
+                      { name: 'Rejected', value: stats.ecos_rejected, color: '#e11d48' },
+                    ].filter(d => d.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ fontWeight: 700 }}
                   />
-                </div>
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
+                No active ECOs yet
               </div>
-            );
-          })}
-          <button className="btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => navigate('/ecos')}>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+            {[
+              { label: 'Draft', value: stats.ecos_draft, color: '#d97706' },
+              { label: 'In Review', value: stats.ecos_in_review, color: '#2563eb' },
+              { label: 'Applied', value: stats.ecos_applied, color: '#059669' },
+              { label: 'Rejected', value: stats.ecos_rejected, color: '#e11d48' },
+            ].map(item => {
+              const pct = stats.ecos_total ? Math.round((item.value / stats.ecos_total) * 100) : 0;
+              return (
+                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }} />
+                  <span style={{ color: 'var(--text-dim)' }}>{item.label}:</span>
+                  <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{item.value} ({pct}%)</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <button className="btn-outline btn-sm" style={{ marginTop: 24, width: '100%' }} onClick={() => navigate('/ecos')}>
             View all ECOs <ArrowRight size={13} />
           </button>
         </motion.div>

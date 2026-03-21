@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, Search, User, LogOut } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TopNavBar({ toggleSidebar }) {
   const location = useLocation();
@@ -89,8 +88,7 @@ export default function TopNavBar({ toggleSidebar }) {
             position: 'relative', width: '400px', maxWidth: '100%'
           }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
-            <motion.input 
-              whileFocus={{ scale: 1.02, boxShadow: '0 0 0 4px var(--brand-glow)' }}
+            <input 
               type="text" 
               placeholder={
                 location.pathname.startsWith('/ecos') ? "Search by Name, ECO Type, Product..." :
@@ -106,8 +104,7 @@ export default function TopNavBar({ toggleSidebar }) {
                 border: '1px solid var(--border-light)',
                 outline: 'none',
                 fontSize: '0.9rem',
-                backgroundColor: 'var(--bg-page)',
-                transition: 'all var(--ts)'
+                backgroundColor: 'var(--bg-page)'
               }}
             />
           </div>
@@ -143,37 +140,42 @@ export default function TopNavBar({ toggleSidebar }) {
             <User size={20} color="#555" />
           </div>
 
-          <AnimatePresence>
-            {profileOpen && (
-              <motion.div
-                initial={{ x: 20 }}
-                animate={{ x: 0 }}
-                exit={{ x: 20 }}
+          {profileOpen && (
+            <div
+              style={{
+                position: 'absolute', top: '50px', right: '0',
+                width: '250px', backgroundColor: 'white',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                borderRadius: '8px', padding: '16px', zIndex: 1001
+              }}
+            >
+              <div style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '12px' }}>
+                <p style={{ margin: 0, fontWeight: 600 }}>{user?.name || 'User'}</p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#ed8080', fontWeight: 'bold' }}>{user?.role?.replace('_', ' ')}</p>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>{user?.email || ''}</p>
+              </div>
+              <button 
+                onClick={() => { setProfileOpen(false); navigate('/profile'); }}
                 style={{
-                  position: 'absolute', top: '50px', right: '0',
-                  width: '250px', backgroundColor: 'white',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  borderRadius: '8px', padding: '16px', zIndex: 1001
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: 'transparent', border: 'none',
+                  color: '#333', fontWeight: 500, cursor: 'pointer', width: '100%', marginBottom: '12px'
                 }}
               >
-                <div style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '12px' }}>
-                  <p style={{ margin: 0, fontWeight: 600 }}>{user?.name || 'User'}</p>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#ed8080', fontWeight: 'bold' }}>{user?.role?.replace('_', ' ')}</p>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>{user?.email || ''}</p>
-                </div>
-                <button 
-                  onClick={() => { setProfileOpen(false); logout(); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    background: 'transparent', border: 'none',
-                    color: '#d32f2f', fontWeight: 500, cursor: 'pointer', width: '100%'
-                  }}
-                >
-                  <LogOut size={16} /> Logout
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <User size={16} /> My Profile
+              </button>
+              <button 
+                onClick={() => { setProfileOpen(false); logout(); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: 'transparent', border: 'none',
+                  color: '#d32f2f', fontWeight: 500, cursor: 'pointer', width: '100%'
+                }}
+              >
+                <LogOut size={16} /> Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

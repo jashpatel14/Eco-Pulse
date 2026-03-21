@@ -18,7 +18,8 @@ const Auth = () => {
     loginId: '',
     email: '',
     password: '',
-    rePassword: ''
+    rePassword: '',
+    role: 'ENGINEERING_USER'
   });
 
   useEffect(() => {
@@ -70,7 +71,8 @@ const Auth = () => {
         const res = await register({
           loginId: formData.loginId,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          role: formData.role
         });
         addToast(res.message, 'success');
         navigate('/login');
@@ -131,89 +133,137 @@ const Auth = () => {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="form-field">
-            <label className="plm-label">Login ID</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                className="plm-input"
-                name="loginId"
-                placeholder="Ex: Engineer123"
-                value={formData.loginId}
-                onChange={handleChange}
-                required
-                style={{ paddingLeft: '40px' }}
-              />
-              <Hash size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          
+          <div style={{ display: 'grid', gridTemplateColumns: isRegister ? '1fr 1fr' : '1fr', gap: '16px' }}>
+            <div className="form-field">
+              <label className="plm-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: '#475569', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Login ID</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  name="loginId"
+                  placeholder={isRegister ? "# ID" : "jashborad13@gmail.com"}
+                  value={formData.loginId}
+                  onChange={handleChange}
+                  required
+                  style={{ 
+                    padding: '0 16px 0 40px', width: '100%', height: '44px', borderRadius: '8px', 
+                    border: '1px solid #e2e8f0', background: isRegister ? '#fff' : '#f1f5f9',
+                    fontSize: '0.95rem', color: '#1e293b', outline: 'none', boxSizing: 'border-box'
+                  }}
+                />
+                <Hash size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              </div>
             </div>
+
+            {isRegister && (
+              <div className="form-field">
+                <label className="plm-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: '#475569', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Project Role</label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    style={{ 
+                      padding: '0 36px 0 40px', width: '100%', height: '44px', borderRadius: '8px', 
+                      border: '1px solid #e2e8f0', background: '#fff', appearance: 'none', 
+                      color: '#1e293b', fontSize: '0.95rem', outline: 'none', cursor: 'pointer', boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="ENGINEERING_USER">Engineer</option>
+                    <option value="APPROVER">Approver</option>
+                    <option value="OPERATIONS_USER">Operations</option>
+                  </select>
+                  <User size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L5 5L9 1" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {isRegister && (
             <div className="form-field">
-              <label className="plm-label">Email Address</label>
+              <label className="plm-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: '#475569', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Email Address</label>
               <div style={{ position: 'relative' }}>
                 <input 
-                  className="plm-input"
                   name="email"
                   type="email"
                   placeholder="name@company.com"
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  style={{ paddingLeft: '40px' }}
+                  style={{ 
+                    padding: '0 16px 0 40px', width: '100%', height: '44px', borderRadius: '8px', 
+                    border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.95rem', color: '#1e293b', 
+                    outline: 'none', boxSizing: 'border-box'
+                  }}
                 />
                 <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               </div>
             </div>
           )}
 
-          <div className="form-field">
-            <label className="plm-label">Password</label>
-            <div style={{ position: 'relative' }}>
-              <input 
-                className="plm-input"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                style={{ paddingLeft: '40px' }}
-              />
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {isRegister && (
+          <div style={{ display: 'grid', gridTemplateColumns: isRegister ? '1fr 1fr' : '1fr', gap: '16px' }}>
             <div className="form-field">
-              <label className="plm-label">Re-Enter Password</label>
+              <label className="plm-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: '#475569', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Password</label>
               <div style={{ position: 'relative' }}>
                 <input 
-                  className="plm-input"
-                  name="rePassword"
-                  type="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  value={formData.rePassword}
+                  value={formData.password}
                   onChange={handleChange}
                   required
-                  style={{ paddingLeft: '40px' }}
+                  style={{ 
+                    padding: '0 40px 0 40px', width: '100%', height: '44px', borderRadius: '8px', 
+                    border: '1px solid #e2e8f0', background: isRegister ? '#fff' : '#f1f5f9',
+                    fontSize: '0.95rem', color: '#1e293b', outline: 'none', boxSizing: 'border-box'
+                  }}
                 />
                 <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
-          )}
+
+            {isRegister && (
+              <div className="form-field">
+                <label className="plm-label" style={{ fontWeight: 700, fontSize: '0.8rem', color: '#475569', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Confirm</label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    name="rePassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.rePassword}
+                    onChange={handleChange}
+                    required
+                    style={{ 
+                      padding: '0 16px 0 40px', width: '100%', height: '44px', borderRadius: '8px', 
+                      border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.95rem', color: '#1e293b', 
+                      outline: 'none', boxSizing: 'border-box'
+                    }}
+                  />
+                  <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                </div>
+              </div>
+            )}
+          </div>
 
           <button 
             type="submit" 
-            className="btn-plm btn-brand btn-full" 
             disabled={loading}
-            style={{ width: '100%', marginTop: '8px', height: '48px', fontSize: '1rem' }}
+            style={{ 
+              width: '100%', marginTop: '8px', height: '48px', fontSize: '1rem', 
+              background: '#ed8080', color: '#fff', border: 'none', borderRadius: '8px',
+              fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(237, 128, 128, 0.4)'
+            }}
           >
             {loading ? 'Processing...' : (isRegister ? 'SIGN UP' : 'SIGN IN')}
           </button>

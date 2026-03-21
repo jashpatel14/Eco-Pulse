@@ -103,6 +103,49 @@ router.post("/", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, re
   }
 });
 
+// PATCH /api/v1/ecos/:id — Update main details (only in DRAFT)
+router.patch("/:id", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, res) => {
+  try {
+    const { title, effectiveDate, changeReason, riskLevel, versionUpdate } = req.body;
+    const eco = await prisma.eCO.findUnique({ where: { id: req.params.id } });
+
+    if (!eco) return res.status(404).json({ message: "ECO not found." });
+    if (eco.status !== "DRAFT") {
+      return res.status(400).json({ message: "Cannot edit ECO details once it has started." });
+    }
+    if (eco.userId !== req.user.id && req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Only the creator or an admin can edit this ECO." });
+    }
+
+    const updated = await prisma.eCO.update({
+      where: { id: req.params.id },
+      data: {
+        title: title || undefined,
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : undefined,
+        changeReason: changeReason || undefined,
+        riskLevel: riskLevel || undefined,
+        versionUpdate: versionUpdate !== undefined ? versionUpdate : undefined,
+      },
+      include: ECO_INCLUDE,
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "ECO_UPDATED",
+        recordType: "ECO",
+        recordId: eco.id,
+        newValue: JSON.stringify(req.body),
+        userId: req.user.id,
+      },
+    });
+
+    res.json(updated);
+  } catch (err) {
+    logger.error("PATCH /ecos/:id error:", err);
+    res.status(500).json({ message: "Failed to update ECO." });
+  }
+});
+
 // GET /api/v1/ecos/:id
 router.get("/:id", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
@@ -259,7 +302,7 @@ router.post("/:id/approve", authMiddleware, requireRole("APPROVER", "ADMIN"), as
     res.json(updated);
   } catch (err) {
     logger.error("POST /ecos/:id/approve error:", err);
-    res.status(500).json({ message: "Failed to approve ECO." });
+    res.status(500).json({ message: "Failed to approve ECO: " + err.message, stack: err.stack });
   }
 });
 
