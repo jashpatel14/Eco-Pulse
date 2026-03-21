@@ -127,4 +127,65 @@ router.get("/:id", authMiddleware, requireRole(...BOM_ROLES), async (req, res) =
   }
 });
 
+// PUT /api/v1/boms/:id
+router.put("/:id", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) => {
+  try {
+    const { components = [], operations = [], attachments = [] } = req.body;
+    const bomId = req.params.id;
+
+    const updatedBom = await prisma.$transaction(async (tx) => {
+      // 1. Update BOM metadata
+      const bom = await tx.bOM.update({
+        where: { id: bomId },
+        data: { attachments: attachments || [] },
+      });
+
+      // 2. Clear and recreate components
+      await tx.bOMComponent.deleteMany({ where: { bomId } });
+      if (components.length > 0) {
+        await tx.bOMComponent.createMany({
+          data: components.map((c) => ({
+            bomId,
+            componentName: c.componentName,
+            quantity: parseFloat(c.quantity),
+            makeOrBuy: c.makeOrBuy || "BUY",
+            supplier: c.supplier || null,
+            unitCost: c.unitCost ? parseFloat(c.unitCost) : null,
+          })),
+        });
+      }
+
+      // 3. Clear and recreate operations
+      await tx.bOMOperation.deleteMany({ where: { bomId } });
+      if (operations.length > 0) {
+        await tx.bOMOperation.createMany({
+          data: operations.map((o) => ({
+            bomId,
+            operationName: o.operationName,
+            durationMins: parseInt(o.durationMins),
+            workCenter: o.workCenter,
+          })),
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          action: "BOM_UPDATED",
+          recordType: "BOM",
+          recordId: bomId,
+          newValue: JSON.stringify({ componentCount: components.length, operationCount: operations.length }),
+          userId: req.user.id,
+        },
+      });
+
+      return bom;
+    });
+
+    res.json(updatedBom);
+  } catch (err) {
+    logger.error("PUT /boms/:id error:", err);
+    res.status(500).json({ message: "Failed to update BOM." });
+  }
+});
+
 module.exports = router;

@@ -22,15 +22,38 @@ export default function BOMForm() {
   const [components, setComponents] = useState([emptyComp()]);
   const [operations, setOperations] = useState([emptyOp()]);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(!!id);
   const [tab, setTab] = useState('components');
+  const [bomData, setBomData] = useState(null);
+
+  const isEdit = !!id;
 
   useEffect(() => {
-    api.get('/products').then(({ data }) => {
-      const active = data.filter(p => p.status === 'ACTIVE');
-      setProducts(active);
-      if (active.length > 0) setProductId(active[0].id);
-    });
-  }, []);
+    const loadData = async () => {
+      try {
+        const prodRes = await api.get('/products');
+        const activeProds = prodRes.data.filter(p => p.status === 'ACTIVE');
+        setProducts(activeProds);
+
+        if (isEdit) {
+          const bomRes = await api.get(`/boms/${id}`);
+          const b = bomRes.data;
+          setBomData(b);
+          setProductId(b.productId);
+          setAttachments(b.attachments || []);
+          setComponents(b.components.length > 0 ? b.components : [emptyComp()]);
+          setOperations(b.operations.length > 0 ? b.operations : [emptyOp()]);
+        } else if (activeProds.length > 0) {
+          setProductId(activeProds[0].id);
+        }
+      } catch (err) {
+        addToast("Failed to load data for BOM form", "error");
+      } finally {
+        setFetching(false);
+      }
+    };
+    loadData();
+  }, [id, isEdit]);
 
   const updateComp = (i, k, v) => setComponents(prev => prev.map((c, idx) => idx === i ? { ...c, [k]: v } : c));
   const removeComp = i => setComponents(prev => prev.filter((_, idx) => idx !== i));
@@ -41,23 +64,32 @@ export default function BOMForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.post('/boms', { productId, components, operations, attachments });
-      addToast('BOM created successfully!', 'success');
-      navigate(`/boms/${data.id}`);
+      if (isEdit) {
+        await api.put(`/boms/${id}`, { components, operations, attachments });
+        addToast('BOM updated successfully!', 'success');
+        navigate(`/boms/${id}`);
+      } else {
+        const { data } = await api.post('/boms', { productId, components, operations, attachments });
+        addToast('BOM created successfully!', 'success');
+        navigate(`/boms/${data.id}`);
+      }
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to create BOM.', 'error');
+      addToast(err.response?.data?.message || `Failed to ${isEdit ? 'update' : 'create'} BOM.`, 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) return <div className="plm-page"><div className="spinner"></div></div>;
 
   return (
     <div className="plm-page">
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <BackButton />
+          <h1 className="page-title">{isEdit ? 'Edit BOM' : 'New BOM'}</h1>
           <div className="chip" style={{ padding: '6px 16px', fontSize: '0.9rem', fontWeight: 700, borderStyle: 'dashed', borderColor: 'var(--brand)' }}>
-            BOM-XXXXXX
+            {isEdit ? bomData?.reference : 'BOM-XXXXXX'}
           </div>
         </div>
 
@@ -106,13 +138,15 @@ export default function BOMForm() {
             <div className="field-group">
               <label className="plm-label">Initial Version</label>
               <div style={{ padding: '2px 0' }}>
-                <span className="plm-version-badge" style={{ fontSize: '0.9rem', padding: '4px 12px' }}>v1.0</span>
+                <span className="plm-version-badge" style={{ fontSize: '0.9rem', padding: '4px 12px' }}>
+                  {isEdit ? `v${bomData?.versionNumber}` : 'v1.0'}
+                </span>
               </div>
             </div>
 
             <div className="field-group">
-              <label className="plm-label">Initial Status</label>
-              <StatusBadge status="ACTIVE" />
+              <label className="plm-label">{isEdit ? 'Current Status' : 'Initial Status'}</label>
+              <StatusBadge status={isEdit ? bomData?.status : 'ACTIVE'} />
             </div>
           </div>
 

@@ -89,6 +89,7 @@ function AppRoutes() {
 
               <Route path="products"      element={<ProductList />} />
               <Route path="products/new"  element={<ProductForm />} />
+              <Route path="products/:id/edit" element={<ProductForm />} />
               <Route path="products/:id"  element={<ProductDetail />} />
               <Route path="products/:id/history"  element={<ProductHistory />} />
               <Route path="products/:id/compare"  element={<ProductCompare />} />
@@ -97,6 +98,7 @@ function AppRoutes() {
 
               <Route path="boms"          element={<BOMList />} />
               <Route path="boms/new"      element={<BOMForm />} />
+              <Route path="boms/:id/edit" element={<BOMForm />} />
               <Route path="boms/:id"      element={<BOMDetail />} />
               <Route path="boms/:id/history"  element={<BOMHistory />} />
               <Route path="boms/:id/compare"  element={<BOMCompare />} />

@@ -111,6 +111,42 @@ router.get("/:id", authMiddleware, requireRole(...PRODUCT_ROLES), async (req, re
   }
 });
 
+// PUT /api/v1/products/:id
+router.put("/:id", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) => {
+  try {
+    const { name, salePrice, costPrice, attachments } = req.body;
+    
+    const product = await prisma.$transaction(async (tx) => {
+      const updatedProduct = await tx.product.update({
+        where: { id: req.params.id },
+        data: {
+          name,
+          salePrice: salePrice ? parseFloat(salePrice) : undefined,
+          costPrice: costPrice ? parseFloat(costPrice) : undefined,
+          attachments: attachments || undefined,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: "PRODUCT_UPDATED",
+          recordType: "PRODUCT",
+          recordId: updatedProduct.id,
+          newValue: JSON.stringify({ name, salePrice, costPrice }),
+          userId: req.user.id,
+        },
+      });
+
+      return updatedProduct;
+    });
+
+    res.json(product);
+  } catch (err) {
+    logger.error("PUT /products/:id error:", err);
+    res.status(500).json({ message: "Failed to update product." });
+  }
+});
+
 // PATCH /api/v1/products/:id/archive
 router.patch("/:id/archive", authMiddleware, requireRole("ADMIN"), async (req, res) => {
   try {
