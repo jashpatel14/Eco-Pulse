@@ -107,9 +107,9 @@ const ProductCompare = () => {
             borderRadius: '5px', overflow: 'hidden', marginBottom: '16px',
             background: 'var(--border-light)'
           }}>
-            {Array.from({ length: diff.summary.added }).map((_, i) => <div key={`add-${i}`} style={{ flex: 1, background: '#059669' }} />)}
-            {Array.from({ length: diff.summary.removed }).map((_, i) => <div key={`rem-${i}`} style={{ flex: 1, background: '#e11d48' }} />)}
-            {Array.from({ length: diff.summary.changed }).map((_, i) => <div key={`cha-${i}`} style={{ flex: 1, background: '#d97706' }} />)}
+            {diff.summary.added > 0 && <div style={{ flex: diff.summary.added, background: '#059669' }} />}
+            {diff.summary.removed > 0 && <div style={{ flex: diff.summary.removed, background: '#e11d48' }} />}
+            {diff.summary.changed > 0 && <div style={{ flex: diff.summary.changed, background: '#d97706' }} />}
           </div>
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', marginBottom: '32px' }}>
              <span style={{ color: '#059669', fontWeight: 700 }}>+{diff.summary.added} added</span>

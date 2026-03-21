@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, History } from 'lucide-react';
+import { Clock, History, GitCommit, Users } from 'lucide-react';
 import api from '../../api/api';
 import BackButton from '../../components/BackButton';
 import { useToast } from '../../context/ToastContext';
@@ -22,7 +22,8 @@ const BOMHistory = () => {
   if (loading) return <div className="plm-page"><div className="spinner"></div></div>;
   if (!data) return <div className="plm-page">BOM not found</div>;
 
-  const contributors = new Set(data.history.map(v => v.createdBy)).size;
+  const history = data?.history || [];
+  const contributors = new Set(history.map(v => v.createdBy)).size;
 
   return (
     <div className="plm-page">
@@ -65,7 +66,7 @@ const BOMHistory = () => {
       </div>
 
       <div className="glass-card" style={{ padding: '40px' }}>
-        <VersionTimeline history={data.history} />
+        <VersionTimeline history={history} />
       </div>
     </div>
   );

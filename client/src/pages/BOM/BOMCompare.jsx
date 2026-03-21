@@ -23,7 +23,7 @@ const BOMCompare = () => {
 
   useEffect(() => {
     api.get(`/bom-vc/history/${id}`).then(res => {
-      const h = res.data.history;
+      const h = res.data?.history || [];
       setHistory(h);
       if (h.length >= 2) { setFromVer(h[1].versionNumber); setToVer(h[0].versionNumber); }
       else if (h.length === 1) { setFromVer(h[0].versionNumber); setToVer(h[0].versionNumber); }
@@ -85,15 +85,15 @@ const BOMCompare = () => {
       ) : diff ? (
         <>
           <div style={{ display: 'flex', gap: '2px', height: '10px', borderRadius: '5px', overflow: 'hidden', marginBottom: '16px', background: 'var(--border-light)' }}>
-            {diff.summary.added > 0 && <div style={{ flex: diff.summary.added, background: '#059669' }} />}
-            {diff.summary.removed > 0 && <div style={{ flex: diff.summary.removed, background: '#e11d48' }} />}
-            {diff.summary.changed > 0 && <div style={{ flex: diff.summary.changed, background: '#d97706' }} />}
+            {(diff.summary?.added || 0) > 0 && <div style={{ flex: diff.summary.added, background: '#059669' }} />}
+            {(diff.summary?.removed || 0) > 0 && <div style={{ flex: diff.summary.removed, background: '#e11d48' }} />}
+            {(diff.summary?.changed || 0) > 0 && <div style={{ flex: diff.summary.changed, background: '#d97706' }} />}
           </div>
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', marginBottom: '32px' }}>
-            <span style={{ color: '#059669', fontWeight: 700 }}>+{diff.summary.added} added</span>
-            <span style={{ color: '#e11d48', fontWeight: 700 }}>-{diff.summary.removed} removed</span>
-            <span style={{ color: '#d97706', fontWeight: 700 }}>~{diff.summary.changed} changed</span>
-            <span style={{ color: 'var(--text-muted)' }}>={diff.summary.same} unchanged</span>
+            <span style={{ color: '#059669', fontWeight: 700 }}>+{diff.summary?.added || 0} added</span>
+            <span style={{ color: '#e11d48', fontWeight: 700 }}>-{diff.summary?.removed || 0} removed</span>
+            <span style={{ color: '#d97706', fontWeight: 700 }}>~{diff.summary?.changed || 0} changed</span>
+            <span style={{ color: 'var(--text-muted)' }}>={diff.summary?.same || 0} unchanged</span>
           </div>
           <DiffTable data={diff.components} title="BOM Components" />
           <DiffTable data={diff.operations} title="Manufacturing Operations" />

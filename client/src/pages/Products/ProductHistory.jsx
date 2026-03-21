@@ -30,7 +30,8 @@ const ProductHistory = () => {
   if (loading) return <div className="plm-page"><div className="spinner"></div></div>;
   if (!data) return <div className="plm-page">Product not found</div>;
 
-  const contributors = new Set(data.history.map(v => v.createdBy)).size;
+  const history = data?.history || [];
+  const contributors = new Set(history.map(v => v.createdBy)).size;
 
   return (
     <div className="plm-page">
@@ -83,7 +84,7 @@ const ProductHistory = () => {
       </div>
 
       <div className="glass-card" style={{ padding: '40px' }}>
-        <VersionTimeline history={data.history} />
+        <VersionTimeline history={history} />
       </div>
     </div>
   );
