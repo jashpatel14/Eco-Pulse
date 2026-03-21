@@ -18,7 +18,7 @@ const ECO_INCLUDE = {
 };
 
 // GET /api/v1/ecos
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const { status, ecoType, riskLevel, changeReason, userId, search } = req.query;
     const isOpsUser = req.user.role === "OPERATIONS_USER";
@@ -104,7 +104,7 @@ router.post("/", authMiddleware, requireRole(...ECO_WRITE_ROLES), async (req, re
 });
 
 // GET /api/v1/ecos/:id
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const eco = await prisma.eCO.findUnique({
       where: { id: req.params.id },
@@ -132,7 +132,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
 });
 
 // PATCH /api/v1/ecos/:id/start  — lock fields and move to IN_REVIEW
-router.patch("/:id/start", authMiddleware, async (req, res) => {
+router.patch("/:id/start", authMiddleware, requireRole("ENGINEERING_USER", "ADMIN"), async (req, res) => {
   try {
     const eco = await prisma.eCO.findUnique({
       where: { id: req.params.id },
@@ -190,7 +190,7 @@ router.patch("/:id/start", authMiddleware, async (req, res) => {
 });
 
 // POST /api/v1/ecos/:id/approve
-router.post("/:id/approve", authMiddleware, async (req, res) => {
+router.post("/:id/approve", authMiddleware, requireRole("APPROVER", "ADMIN"), async (req, res) => {
   try {
     const eco = await prisma.eCO.findUnique({
       where: { id: req.params.id },
@@ -264,7 +264,7 @@ router.post("/:id/approve", authMiddleware, async (req, res) => {
 });
 
 // POST /api/v1/ecos/:id/reject
-router.post("/:id/reject", authMiddleware, async (req, res) => {
+router.post("/:id/reject", authMiddleware, requireRole("APPROVER", "ADMIN"), async (req, res) => {
   try {
     const { reason } = req.body;
     if (!reason || reason.trim().length < 20) {
@@ -362,7 +362,7 @@ router.post("/:id/validate", authMiddleware, requireRole("ENGINEERING_USER", "AD
 });
 
 // PATCH /api/v1/ecos/:id/changes — save draft changes
-router.patch("/:id/changes", authMiddleware, async (req, res) => {
+router.patch("/:id/changes", authMiddleware, requireRole("ENGINEERING_USER", "ADMIN"), async (req, res) => {
   try {
     const { changes } = req.body; // Array of { fieldName, recordType, recordId, oldValue, newValue }
     const eco = await prisma.eCO.findUnique({ where: { id: req.params.id } });

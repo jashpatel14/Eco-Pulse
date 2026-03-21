@@ -47,7 +47,7 @@ export default function BOMList() {
 
       <div className="glass-card">
         <div className="toolbar">
-          <input className="search-input" placeholder="Search by product name..." value={search}
+          <input className="search-input" placeholder="Search by Finished Product..." value={search}
             onChange={e => setSearch(e.target.value)} />
         </div>
 
@@ -62,17 +62,23 @@ export default function BOMList() {
           <div className="table-wrap">
             <motion.table className="plm-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <thead>
-                <tr><th>Reference</th><th>Product</th><th>Version</th><th>Status</th><th>Created</th></tr>
+                <tr><th>Reference</th><th>Finished Product</th><th>Quantity</th><th>Version</th><th>Status</th></tr>
               </thead>
               <tbody>
-                {boms.map(bom => (
-                  <tr key={bom.id} onClick={() => navigate(`/boms/${bom.id}`)}>
+                {boms.map((bom, i) => (
+                  <motion.tr 
+                    key={bom.id} 
+                    onClick={() => navigate(`/boms/${bom.id}`)}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     <td><strong>{bom.reference}</strong></td>
                     <td>{bom.product?.name || '—'}</td>
+                    <td style={{ fontWeight: 500 }}>{parseFloat(bom.quantity || 0)}</td>
                     <td><span className="plm-version-badge">v{bom.versionNumber}</span></td>
                     <td><StatusBadge status={bom.status} /></td>
-                    <td className="text-dim">{new Date(bom.created_at).toLocaleDateString()}</td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </motion.table>

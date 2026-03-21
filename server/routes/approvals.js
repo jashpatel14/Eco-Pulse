@@ -6,7 +6,7 @@ const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
 // GET /api/v1/approvals
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
   try {
     const rules = await prisma.eCOApprovalRule.findMany({
       include: {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Settings, Plus, Trash2, GripVertical } from 'lucide-react';
 import api from '../../api/api';
@@ -6,7 +7,11 @@ import { useToast } from '../../context/ToastContext';
 
 export default function SettingsPage() {
   const { addToast } = useToast();
-  const [tab, setTab] = useState('stages');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') || 'stages';
+  
+  const setTab = (t) => setSearchParams({ tab: t });
+  
   const [stages, setStages] = useState([]);
   const [rules, setRules] = useState([]);
   const [users, setUsers] = useState([]);

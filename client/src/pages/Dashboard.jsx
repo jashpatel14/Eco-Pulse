@@ -127,42 +127,72 @@ export default function Dashboard() {
       {/* Quick Actions + Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 4 }}>
         {/* Quick Actions */}
-        <motion.div className="glass-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Zap size={18} style={{ color: 'var(--brand-primary)' }} />
-            <h3 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Quick Actions</h3>
+        <motion.div 
+          className="glass-card" 
+          initial={{ opacity: 0, y: 12 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.25 }}
+          style={{ display: 'flex', flexDirection: 'column' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: 'var(--brand-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)' }}>
+              <Zap size={18} />
+            </div>
+            <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>Quick Actions</h3>
           </div>
-          <div className="quick-actions-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
             {QUICK_ACTIONS.map(a => (
-              <button key={a.label} className={a.primary ? 'btn-plm btn-sm' : 'btn-outline btn-sm'} onClick={a.onClick}>
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                key={a.label} 
+                className={a.primary ? 'btn-plm btn-sm' : 'btn-outline btn-sm'} 
+                onClick={a.onClick}
+                style={{ justifyContent: 'center' }}
+              >
                 {a.label}
-              </button>
+              </motion.button>
             ))}
           </div>
         </motion.div>
 
         {/* Summary card */}
-        <motion.div className="glass-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <TrendingUp size={18} style={{ color: '#059669' }} />
-            <h3 style={{ fontWeight: 700, fontSize: '0.95rem' }}>ECO Pipeline</h3>
+        <motion.div 
+          className="glass-card" 
+          initial={{ opacity: 0, y: 12 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.3 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: 'hsla(142, 70%, 50%, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
+               <TrendingUp size={18} />
+            </div>
+            <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>ECO Pipeline</h3>
           </div>
           {[
-            { label: 'Draft', value: stats.ecos_draft, color: '#d97706', pct: stats.ecos_total ? Math.round(stats.ecos_draft / stats.ecos_total * 100) : 0 },
-            { label: 'In Review', value: stats.ecos_in_review, color: '#2563eb', pct: stats.ecos_total ? Math.round(stats.ecos_in_review / stats.ecos_total * 100) : 0 },
-            { label: 'Applied', value: stats.ecos_applied, color: '#059669', pct: stats.ecos_total ? Math.round(stats.ecos_applied / stats.ecos_total * 100) : 0 },
-            { label: 'Rejected', value: stats.ecos_rejected, color: '#e11d48', pct: stats.ecos_total ? Math.round(stats.ecos_rejected / stats.ecos_total * 100) : 0 },
-          ].map(item => (
-            <div key={item.label} style={{ marginBottom: 12 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', marginBottom:4 }}>
-                <span style={{ color: 'var(--text-dim)', fontWeight: 500 }}>{item.label}</span>
-                <span style={{ color: item.color, fontWeight: 700 }}>{item.value}</span>
+            { label: 'Draft', value: stats.ecos_draft, color: '#d97706', bg: '#fffbeb' },
+            { label: 'In Review', value: stats.ecos_in_review, color: '#2563eb', bg: '#eff6ff' },
+            { label: 'Applied', value: stats.ecos_applied, color: '#059669', bg: '#ecfdf5' },
+            { label: 'Rejected', value: stats.ecos_rejected, color: '#e11d48', bg: '#fff1f2' },
+          ].map(item => {
+            const pct = stats.ecos_total ? Math.round((item.value / stats.ecos_total) * 100) : 0;
+            return (
+              <div key={item.label} style={{ marginBottom: 16 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.82rem', marginBottom:6 }}>
+                  <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>{item.label}</span>
+                  <span style={{ color: item.color, fontWeight: 700 }}>{item.value} ({pct}%)</span>
+                </div>
+                <div style={{ height: 8, background: 'var(--bg-page)', borderRadius: 999, overflow: 'hidden' }}>
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
+                    style={{ height: '100%', background: item.color, borderRadius: 999 }} 
+                  />
+                </div>
               </div>
-              <div style={{ height: 6, background: '#f3f4f6', borderRadius: 999 }}>
-                <div style={{ height: 6, background: item.color, borderRadius: 999, width: `${item.pct}%`, transition: 'width 0.5s ease' }} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
           <button className="btn-outline btn-sm" style={{ marginTop: 8 }} onClick={() => navigate('/ecos')}>
             View all ECOs <ArrowRight size={13} />
           </button>

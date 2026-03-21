@@ -49,23 +49,71 @@ export default function BOMForm() {
 
   return (
     <div className="plm-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button className="btn-outline btn-sm" onClick={() => navigate(-1)}>
             <ArrowLeft size={16} /> Back
           </button>
-          <h1 className="page-title">New Bill of Materials</h1>
-          <p className="page-desc">Link components and operations to a product</p>
+          <div style={{ 
+            border: '2px dashed var(--border-color)', 
+            padding: '4px 12px', 
+            borderRadius: '4px',
+            fontSize: '1rem',
+            fontWeight: 600,
+            color: 'var(--text-muted)'
+          }}>
+            BOM-XXXXXX
+          </div>
         </div>
+
+        <button onClick={handleSubmit} className="btn-plm" disabled={loading || !productId} style={{ backgroundColor: '#ed8080' }}>
+          <Save size={16} /> {loading ? 'Saving…' : 'Save'}
+        </button>
       </div>
 
       <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <form onSubmit={handleSubmit} className="plm-form">
-          <div className="field-group">
-            <label className="plm-label">Product <span className="req">*</span></label>
-            <select className="plm-select" value={productId} onChange={e => setProductId(e.target.value)} required>
-              {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className="field-group">
+              <label className="plm-label">Finished Product <span className="req">*</span></label>
+              <select className="plm-select" value={productId} onChange={e => setProductId(e.target.value)} required>
+                <option value="">Select Finished Product...</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+
+            <div className="field-group">
+              <label className="plm-label">Reference</label>
+              <input className="plm-input" placeholder="Max 8 chars" maxLength={8} readOnly value="Auto-gen" />
+            </div>
+
+            <div className="field-group">
+              <label className="plm-label">Quantity</label>
+              <input className="plm-input" type="number" step="0.01" defaultValue={1} />
+            </div>
+
+            <div className="field-group">
+              <label className="plm-label">Units</label>
+              <select className="plm-select">
+                <option>Units</option>
+                <option>kg</option>
+                <option>m</option>
+                <option>L</option>
+              </select>
+            </div>
+
+            <div className="field-group" style={{ gridColumn: 'span 2' }}>
+              <label className="plm-label">Version</label>
+              <div style={{ 
+                backgroundColor: '#1e1e1e', 
+                color: 'white', 
+                padding: '8px 12px', 
+                borderRadius: '4px',
+                fontWeight: 600
+              }}>
+                1
+              </div>
+            </div>
           </div>
 
           <div className="tab-bar">
@@ -73,77 +121,54 @@ export default function BOMForm() {
               Components ({components.length})
             </button>
             <button type="button" className={`tab-btn ${tab === 'operations' ? 'active' : ''}`} onClick={() => setTab('operations')}>
-              Operations ({operations.length})
+              Work Orders ({operations.length})
             </button>
           </div>
 
           {tab === 'components' && (
             <>
+              <div style={{ marginBottom: '12px', fontWeight: 600, fontSize: '0.9rem', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr' }}>
+                <span>Components</span>
+                <span>To consume</span>
+                <span>Units</span>
+              </div>
               {components.map((c, i) => (
-                <div key={i} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 2fr 1.5fr 32px' }}>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Component</label>}
-                    <input className="plm-input" placeholder="e.g. Steel Rod" value={c.componentName} onChange={e => updateComp(i,'componentName',e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Qty</label>}
-                    <input className="plm-input" type="number" min="0" step="0.0001" placeholder="1" value={c.quantity} onChange={e => updateComp(i,'quantity',e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Make/Buy</label>}
-                    <select className="plm-select" value={c.makeOrBuy} onChange={e => updateComp(i,'makeOrBuy',e.target.value)}>
-                      <option value="BUY">Buy</option>
-                      <option value="MAKE">Make</option>
-                    </select>
-                  </div>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Supplier</label>}
-                    <input className="plm-input" placeholder="Supplier name" value={c.supplier} onChange={e => updateComp(i,'supplier',e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Unit Cost (₹)</label>}
-                    <input className="plm-input" type="number" min="0" step="0.01" placeholder="0.00" value={c.unitCost} onChange={e => updateComp(i,'unitCost',e.target.value)} />
-                  </div>
+                <div key={i} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 32px' }}>
+                  <input className="plm-input" placeholder="Product..." value={c.componentName} onChange={e => updateComp(i,'componentName',e.target.value)} />
+                  <input className="plm-input" type="number" placeholder="0" value={c.quantity} onChange={e => updateComp(i,'quantity',e.target.value)} />
+                  <select className="plm-select">
+                    <option>Units</option>
+                    <option>kg</option>
+                  </select>
                   <button type="button" className="row-del-btn" onClick={() => removeComp(i)}><Trash2 size={14} /></button>
                 </div>
               ))}
-              <button type="button" className="add-row-btn" onClick={() => setComponents(prev => [...prev, emptyComp()])}>
-                <Plus size={14} /> Add Component
+              <button type="button" className="add-row-btn" onClick={() => setComponents(prev => [...prev, emptyComp()])} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                Add a product
               </button>
             </>
           )}
 
           {tab === 'operations' && (
             <>
+              <div style={{ marginBottom: '12px', fontWeight: 600, fontSize: '0.9rem', display: 'grid', gridTemplateColumns: '2fr 1fr 2fr' }}>
+                <span>Operations</span>
+                <span>Work Center</span>
+                <span>Expected Duration</span>
+              </div>
               {operations.map((o, i) => (
                 <div key={i} className="dynamic-row" style={{ gridTemplateColumns: '2fr 1fr 2fr 32px' }}>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Operation</label>}
-                    <input className="plm-input" placeholder="e.g. Welding" value={o.operationName} onChange={e => updateOp(i,'operationName',e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Duration (min)</label>}
-                    <input className="plm-input" type="number" min="0" placeholder="30" value={o.durationMins} onChange={e => updateOp(i,'durationMins',e.target.value)} />
-                  </div>
-                  <div className="field-group">
-                    {i === 0 && <label className="plm-label">Work Center</label>}
-                    <input className="plm-input" placeholder="e.g. Assembly Line 1" value={o.workCenter} onChange={e => updateOp(i,'workCenter',e.target.value)} />
-                  </div>
+                  <input className="plm-input" placeholder="Operation..." value={o.operationName} onChange={e => updateOp(i,'operationName',e.target.value)} />
+                  <input className="plm-input" placeholder="Work Center..." value={o.workCenter} onChange={e => updateOp(i,'workCenter',e.target.value)} />
+                  <input className="plm-input" placeholder="Duration..." value={o.durationMins} onChange={e => updateOp(i,'durationMins',e.target.value)} />
                   <button type="button" className="row-del-btn" onClick={() => removeOp(i)}><Trash2 size={14} /></button>
                 </div>
               ))}
-              <button type="button" className="add-row-btn" onClick={() => setOperations(prev => [...prev, emptyOp()])}>
-                <Plus size={14} /> Add Operation
+              <button type="button" className="add-row-btn" onClick={() => setOperations(prev => [...prev, emptyOp()])} style={{ color: 'blue', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                Add a line
               </button>
             </>
           )}
-
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
-            <button type="button" className="btn-outline" onClick={() => navigate(-1)}>Cancel</button>
-            <button type="submit" className="btn-plm" disabled={loading || !productId}>
-              <Save size={16} /> {loading ? 'Saving…' : 'Create BOM'}
-            </button>
-          </div>
         </form>
       </motion.div>
     </div>

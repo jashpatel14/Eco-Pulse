@@ -1,17 +1,19 @@
-/**
- * roleGuard.js — Factory middleware for role-based route protection.
- * Usage: requireRole('ADMIN', 'ENGINEERING_USER')
- */
 const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Authentication required." });
+      return res.status(401).json({ message: "Not logged in" });
     }
+
+    // Role-Based Access Control logic
+    // Admin always has access
+    if (req.user.role === "ADMIN") {
+      return next();
+    }
+
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: "You do not have permission to perform this action.",
-      });
+      return res.status(403).json({ message: "Access denied" });
     }
+
     next();
   };
 };

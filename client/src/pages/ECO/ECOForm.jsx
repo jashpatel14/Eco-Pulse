@@ -68,35 +68,47 @@ export default function ECOForm() {
 
   return (
     <div className="plm-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn-outline btn-sm" onClick={() => navigate(-1)}>
             <ArrowLeft size={16} /> Back
           </button>
-          <h1 className="page-title">New Engineering Change Order</h1>
-          <p className="page-desc">Draft an ECO for a product or BOM change</p>
+          <button type="button" className="btn-outline" onClick={handleSubmit} disabled={loading || !form.productId}>
+            Start
+          </button>
+          <button type="button" className="btn-outline" onClick={handleSubmit} disabled={loading || !form.productId}>
+            Save
+          </button>
         </div>
       </div>
 
       <motion.div className="glass-card" style={{ maxWidth: 680 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Stage Bar Placeholder for New ECO */}
+        <div style={{ marginBottom: '20px', padding: '0 0 16px 0', borderBottom: '1px solid #eee' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+             <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#fff', border: '1px solid #ccc' }} />
+             <div style={{ padding: '4px 16px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, backgroundColor: '#ed8080', color: 'white' }}>New</div>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="plm-form">
           <div className="field-group">
-            <label className="plm-label">ECO Title <span className="req">*</span></label>
-            <input className="plm-input" placeholder="Brief description of the change" value={form.title} onChange={e => set('title', e.target.value)} required />
+            <label className="plm-label">Title <span className="req">*</span></label>
+            <input className="plm-input" placeholder="e.g. Testing ECOS" value={form.title} onChange={e => set('title', e.target.value)} required />
           </div>
 
           <div className="form-row">
             <div className="field-group">
               <label className="plm-label">ECO Type <span className="req">*</span></label>
-              <select className="plm-select" value={form.ecoType} onChange={e => set('ecoType', e.target.value)}>
-                <option value="PRODUCT">Product</option>
+              <select className="plm-select" value={form.ecoType} onChange={e => set('ecoType', e.target.value)} required>
+                <option value="PRODUCT">Products</option>
                 <option value="BOM">Bill of Materials</option>
               </select>
             </div>
             <div className="field-group">
               <label className="plm-label">Product <span className="req">*</span></label>
               <select className="plm-select" value={form.productId} onChange={e => set('productId', e.target.value)} required>
-                <option value="">Select product…</option>
+                <option value="">Select Product...</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
@@ -106,46 +118,28 @@ export default function ECOForm() {
             <div className="field-group">
               <label className="plm-label">Bill of Materials <span className="req">*</span></label>
               <select className="plm-select" value={form.bomId} onChange={e => set('bomId', e.target.value)} required>
-                <option value="">Select BOM…</option>
+                <option value="">Select Bill of Material...</option>
                 {boms.map(b => <option key={b.id} value={b.id}>{b.reference} (v{b.versionNumber})</option>)}
               </select>
             </div>
           )}
 
-          <div className="form-row">
-            <div className="field-group">
-              <label className="plm-label">Change Reason <span className="req">*</span></label>
-              <select className="plm-select" value={form.changeReason} onChange={e => set('changeReason', e.target.value)}>
-                {CHANGE_REASONS.map(r => <option key={r} value={r}>{r.replace(/_/g,' ')}</option>)}
-              </select>
-            </div>
-            <div className="field-group">
-              <label className="plm-label">Risk Level <span className="req">*</span></label>
-              <select className="plm-select" value={form.riskLevel} onChange={e => set('riskLevel', e.target.value)}>
-                {RISK_LEVELS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
+          <div className="field-group">
+            <label className="plm-label">User <span className="req">*</span></label>
+            <input className="plm-input" readOnly value="Admin1" />
           </div>
 
           <div className="form-row">
             <div className="field-group">
-              <label className="plm-label">Target Effective Date</label>
+              <label className="plm-label">Effective Date</label>
               <input className="plm-input" type="date" value={form.effectiveDate} onChange={e => set('effectiveDate', e.target.value)} />
             </div>
-            <div className="field-group" style={{ justifyContent: 'flex-end', paddingBottom: 2 }}>
-              <label className="plm-label">Options</label>
-              <label className="checkbox-label">
+            <div className="field-group" style={{ justifyContent: 'flex-end', paddingBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input type="checkbox" checked={form.versionUpdate} onChange={e => set('versionUpdate', e.target.checked)} />
-                Create new version on apply
-              </label>
+                <label className="plm-label" style={{ marginBottom: 0 }}>Version Update</label>
+              </div>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-            <button type="button" className="btn-outline" onClick={() => navigate(-1)}>Cancel</button>
-            <button type="submit" className="btn-plm" disabled={loading || !form.productId}>
-              <Save size={16} /> {loading ? 'Saving…' : 'Save as Draft'}
-            </button>
           </div>
         </form>
       </motion.div>

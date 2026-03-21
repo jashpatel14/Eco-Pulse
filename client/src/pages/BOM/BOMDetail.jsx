@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ClipboardList, GitPullRequest } from 'lucide-react';
+import { ArrowLeft, ClipboardList, GitPullRequest, Edit } from 'lucide-react';
 import api from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
 import { useToast } from '../../context/ToastContext';
 
 export default function BOMDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const isEngineer = user?.role === 'ENGINEERING_USER';
+  const isApprover = user?.role === 'APPROVER';
+  const canRaiseECO = (isAdmin || isEngineer || isApprover);
   const [bom, setBom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('components');
@@ -32,19 +37,29 @@ export default function BOMDetail() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
-            <ArrowLeft size={16} /> BOMs
+          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
+            <ArrowLeft size={16} /> Back
           </button>
-          <h1 className="page-title"><ClipboardList size={22} style={{ display:'inline', marginRight: 8 }} />{bom.reference}</h1>
-          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+          <h1 className="page-title">{bom.reference}</h1>
+          <p className="page-desc">Bill of Materials Detail</p>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
             <StatusBadge status={bom.status} />
             <span className="plm-version-badge">v{bom.versionNumber}</span>
-            <span className="text-dim" style={{ fontSize: '0.88rem' }}>→ {bom.product?.name}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>• {bom.product?.name}</span>
           </div>
         </div>
-        <button className="btn-plm btn-sm" onClick={() => navigate(`/ecos/new?bomId=${bom.id}&productId=${bom.productId}`)}>
-          <GitPullRequest size={16} /> Raise ECO
-        </button>
+        <div className="page-actions">
+          {canRaiseECO && (
+            <button className="btn-plm" onClick={() => navigate('/ecos/new', { state: { bomId: bom.id, productId: bom.productId, ecoType: 'BOM' } })}>
+              <GitPullRequest size={18} /> Raise ECO
+            </button>
+          )}
+          {isAdmin && (
+            <button className="btn-outline" onClick={() => navigate(`/boms/${id}/edit`)}>
+              <Edit size={18} /> Edit BOM
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="tab-bar">

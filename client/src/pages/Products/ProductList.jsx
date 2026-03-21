@@ -62,7 +62,7 @@ export default function ProductList() {
         <div className="toolbar">
           <input
             className="search-input"
-            placeholder="Search products..."
+            placeholder="Search by Product Name..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -80,21 +80,23 @@ export default function ProductList() {
             <motion.table className="plm-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Product Name</th>
                   <th>Version</th>
-                  <th>Sale Price</th>
-                  <th>Cost Price</th>
                   <th>Status</th>
                   {canArchive && <th></th>}
                 </tr>
               </thead>
               <tbody>
-                {products.map(p => (
-                  <tr key={p.id} onClick={() => navigate(`/products/${p.id}`)}>
+                {products.map((p, i) => (
+                  <motion.tr 
+                    key={p.id} 
+                    onClick={() => navigate(`/products/${p.id}`)}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     <td><strong>{p.name}</strong></td>
                     <td><span className="plm-version-badge">v{p.currentVersion}</span></td>
-                    <td>₹{parseFloat(p.salePrice).toLocaleString()}</td>
-                    <td>₹{parseFloat(p.costPrice).toLocaleString()}</td>
                     <td><StatusBadge status={p.status} /></td>
                     {canArchive && (
                       <td>
@@ -105,7 +107,7 @@ export default function ProductList() {
                         )}
                       </td>
                     )}
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </motion.table>

@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Package, GitPullRequest, HistoryIcon } from 'lucide-react';
+import { ArrowLeft, Package, GitPullRequest, Edit } from 'lucide-react';
 import api from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
 import { useToast } from '../../context/ToastContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const isEngineer = user?.role === 'ENGINEERING_USER';
+  const isApprover = user?.role === 'APPROVER';
+  const canRaiseECO = (isAdmin || isEngineer || isApprover);
+  const canEdit = isAdmin;
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('info');
@@ -38,18 +44,24 @@ export default function ProductDetail() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
-            <ArrowLeft size={16} /> Products
+          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
+            <ArrowLeft size={16} /> Back
           </button>
-          <h1 className="page-title"><Package size={22} style={{ display:'inline', marginRight: 8 }} />{product.name}</h1>
-          <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center' }}>
-            <StatusBadge status={product.status} />
-            <span className="plm-version-badge">Version {product.currentVersion}</span>
-          </div>
+          <h1 className="page-title">{product.name}</h1>
+          <p className="page-desc">Product Master Record</p>
         </div>
-        <button className="btn-plm btn-sm" onClick={() => navigate(`/ecos/new?productId=${product.id}`)}>
-          <GitPullRequest size={16} /> Raise ECO
-        </button>
+        <div className="page-actions">
+          {canEdit && (
+            <button className="btn-outline" onClick={() => navigate(`/products/${id}/edit`)}>
+              <Edit size={18} /> Edit Product
+            </button>
+          )}
+          {canRaiseECO && (
+            <button className="btn-plm" onClick={() => navigate('/ecos/new', { state: { productId: id, ecoType: 'PRODUCT' } })}>
+              <GitPullRequest size={18} /> Raise ECO
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="tab-bar">
@@ -61,10 +73,22 @@ export default function ProductDetail() {
       </div>
 
       {tab === 'info' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div className="glass-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+            <div className="detail-grid">
+              <div className="detail-field">
+                <label>Status</label>
+                <StatusBadge status={product.status} />
+              </div>
+              <div className="detail-field">
+                <label>Current Version</label>
+                <span className="plm-version-badge">v{product.currentVersion}</span>
+              </div>
+            </div>
+          </div>
+
           <div className="detail-grid">
             <div className="detail-field"><label>Product Name</label><span>{product.name}</span></div>
-            <div className="detail-field"><label>Status</label><StatusBadge status={product.status} /></div>
             <div className="detail-field"><label>Current Version</label><span className="plm-version-badge">v{product.currentVersion}</span></div>
             <div className="detail-field"><label>Sale Price</label><span>₹{parseFloat(product.salePrice).toLocaleString()}</span></div>
             <div className="detail-field"><label>Cost Price</label><span>₹{parseFloat(product.costPrice).toLocaleString()}</span></div>

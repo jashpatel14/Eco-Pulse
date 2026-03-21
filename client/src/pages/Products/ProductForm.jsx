@@ -37,14 +37,13 @@ export default function ProductForm() {
 
   return (
     <div className="plm-page">
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
-            <ArrowLeft size={16} /> Back
-          </button>
-          <h1 className="page-title"><Package size={22} style={{ display:'inline', marginRight: 8 }} />New Product</h1>
-          <p className="page-desc">Create a new product master record</p>
-        </div>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button className="btn-outline btn-sm" onClick={() => navigate(-1)}>
+          <ArrowLeft size={16} /> Back
+        </button>
+        <button onClick={handleSubmit} className="btn-plm" disabled={loading} style={{ backgroundColor: '#ed8080' }}>
+          <Save size={16} /> {loading ? 'Saving…' : 'Save'}
+        </button>
       </div>
 
       <motion.div className="glass-card" style={{ maxWidth: 640 }}
@@ -53,31 +52,46 @@ export default function ProductForm() {
         <form onSubmit={handleSubmit} className="plm-form">
           <div className="field-group">
             <label className="plm-label">Product Name <span className="req">*</span></label>
-            <input className="plm-input" name="name" placeholder="e.g. Industrial Pump Mk3" value={form.name} onChange={handleChange} required />
+            <input className="plm-input" name="name" maxLength={255} placeholder="e.g. Industrial Pump Mk3" value={form.name} onChange={handleChange} required />
           </div>
 
           <div className="form-row">
             <div className="field-group">
-              <label className="plm-label">Sale Price (₹) <span className="req">*</span></label>
+              <label className="plm-label">Sales Price <span className="req">*</span></label>
               <input className="plm-input" name="salePrice" type="number" step="0.01" min="0" placeholder="0.00" value={form.salePrice} onChange={handleChange} required />
             </div>
             <div className="field-group">
-              <label className="plm-label">Cost Price (₹) <span className="req">*</span></label>
+              <label className="plm-label">Cost Price <span className="req">*</span></label>
               <input className="plm-input" name="costPrice" type="number" step="0.01" min="0" placeholder="0.00" value={form.costPrice} onChange={handleChange} required />
             </div>
           </div>
 
           <div className="field-group">
             <label className="plm-label">Attachments</label>
-            <input className="plm-input" name="attachments" placeholder="Comma-separated URLs (e.g. spec.pdf, drawing.dwg)" value={form.attachments} onChange={handleChange} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Separate multiple attachment URLs with commas</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input className="plm-input" name="attachments" placeholder="Excel, PDF, images, etc." value={form.attachments} onChange={handleChange} style={{ flex: 1 }} />
+              <button type="button" style={{ 
+                backgroundColor: '#ed8080', color: 'white', border: 'none', 
+                padding: '0 16px', borderRadius: '4px', fontWeight: 600, cursor: 'pointer' 
+              }}>
+                Upload
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-            <button type="button" className="btn-outline" onClick={() => navigate(-1)}>Cancel</button>
-            <button type="submit" className="btn-plm" disabled={loading}>
-              <Save size={16} /> {loading ? 'Saving…' : 'Create Product'}
-            </button>
+          <div className="field-group">
+            <label className="plm-label">Version</label>
+            <div style={{ 
+              backgroundColor: '#1e1e1e', color: 'white', padding: '8px 12px', 
+              borderRadius: '4px', fontWeight: 600, width: 'fit-content', minWidth: '40px'
+            }}>
+              1
+            </div>
+          </div>
+
+          <div className="field-group">
+            <label className="plm-label">Status</label>
+            <div className="badge badge-active" style={{ width: 'fit-content' }}>Active</div>
           </div>
         </form>
       </motion.div>

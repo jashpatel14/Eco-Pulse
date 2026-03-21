@@ -21,6 +21,11 @@ export default function ReportsPage() {
       .finally(() => setLoading(false));
   }, [tab]);
 
+  const goToChanges = (ecoId) => {
+    // Navigate to ECO details, maybe with a query param or state if needed, but the diff tab is there
+    window.location.href = `/ecos/${ecoId}`;
+  };
+
   const exportCSV = () => {
     if (!data.length) return;
     const keys = Object.keys(data[0]).filter(k => typeof data[0][k] !== 'object' || data[0][k] === null);
@@ -33,10 +38,9 @@ export default function ReportsPage() {
 
   return (
     <div className="plm-page">
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="page-header-left">
-          <h1 className="page-title"><BarChart2 size={22} style={{ display:'inline', marginRight: 8 }} />Reports</h1>
-          <p className="page-desc">Analyse ECO activity, product versions, and BOM changes</p>
+          <h1 className="page-title">Reporting</h1>
         </div>
         <button className="btn-outline btn-sm" onClick={exportCSV} disabled={!data.length}>
           <Download size={16} /> Export CSV
@@ -60,7 +64,7 @@ export default function ReportsPage() {
           <motion.div className="table-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {tab === 'ecos' && (
               <table className="plm-table">
-                <thead><tr><th>Title</th><th>Type</th><th>Product</th><th>Risk</th><th>Status</th><th>Stage</th><th>By</th><th>Created</th></tr></thead>
+                <thead><tr><th>Title</th><th>Type</th><th>Product</th><th>Risk</th><th>Status</th><th>Stage</th><th>By</th><th>Changes</th></tr></thead>
                 <tbody>
                   {data.map(eco => (
                     <tr key={eco.id} style={{ cursor: 'default' }}>
@@ -71,7 +75,11 @@ export default function ReportsPage() {
                       <td><StatusBadge status={eco.status} /></td>
                       <td><span className="chip">{eco.stage?.name}</span></td>
                       <td className="text-dim">{eco.user?.name}</td>
-                      <td className="text-dim">{new Date(eco.created_at).toLocaleDateString()}</td>
+                      <td>
+                        <button className="btn-outline btn-sm" onClick={() => goToChanges(eco.id)}>
+                          View Changes
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

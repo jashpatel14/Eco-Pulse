@@ -1,299 +1,234 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, Chrome, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, Hash } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
-
-  const [isRegister, setIsRegister] = useState(false);
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const { login, register, isAuthenticated } = useAuth();
   const { addToast } = useToast();
 
+  const [isRegister, setIsRegister] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [formData, setFormData] = useState({
+    loginId: '',
+    email: '',
+    password: '',
+    rePassword: ''
+  });
+
   useEffect(() => {
+    if (isAuthenticated) navigate('/dashboard');
     const path = window.location.pathname;
     setIsRegister(path === '/register');
-  }, [window.location.pathname]);
+  }, [window.location.pathname, isAuthenticated]);
 
-  const handleLoginChange = (e) => {
-    setLoginData({ ...loginData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleRegisterChange = (e) => {
-    setRegisterData({ ...registerData, [e.target.name]: e.target.value });
-  };
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    if (loading) return;
-    setLoading(true);
-    try {
-      await login(loginData.email, loginData.password);
-      addToast('Welcome back!', 'success');
-      navigate('/dashboard');
-    } catch (err) {
-      if (err.response?.data?.errors) {
-        addToast(err.response.data.errors.map(e => e.message).join(', '), 'error');
-      } else {
-        addToast(err.response?.data?.message || 'Invalid credentials. Please try again.', 'error');
-      }
-    } finally {
-      setLoading(false);
+  const validateSignup = () => {
+    const { loginId, email, password, rePassword } = formData;
+    
+    if (loginId.length < 6 || loginId.length > 12) {
+      addToast("Login ID must be between 6 and 12 characters.", "error");
+      return false;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      addToast("Please enter a valid email address.", "error");
+      return false;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,})/;
+    if (!passwordRegex.test(password)) {
+      addToast("Password must be at least 8 chars, with 1 uppercase, 1 lowercase, and 1 special character.", "error");
+      return false;
+    }
+
+    if (password !== rePassword) {
+      addToast("Passwords do not match.", "error");
+      return false;
+    }
+
+    return true;
   };
 
-  const handleRegisterSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
-    setLoading(true);
-    try {
-      const data = await register(registerData.name, registerData.email, registerData.password);
-      addToast(data.message, 'success');
-      setTimeout(() => navigate('/login'), 5000);
-    } catch (err) {
-      if (err.response?.data?.errors) {
-        addToast(err.response.data.errors.map(e => e.message).join(', '), 'error');
-      } else {
-        addToast(err.response?.data?.message || 'Registration failed.', 'error');
+
+    if (isRegister) {
+      if (!validateSignup()) return;
+      setLoading(true);
+      try {
+        const res = await register({
+          loginId: formData.loginId,
+          email: formData.email,
+          password: formData.password
+        });
+        addToast(res.message, 'success');
+        navigate('/login');
+      } catch (err) {
+        addToast(err.response?.data?.message || 'Registration failed', 'error');
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+    } else {
+      if (!formData.loginId || !formData.password) {
+        return addToast("Please fill all fields", "error");
+      }
+      setLoading(true);
+      try {
+        await login(formData.loginId, formData.password);
+        addToast('Welcome back!', 'success');
+        navigate('/dashboard');
+      } catch (err) {
+        addToast(err.response?.data?.message || 'Invalid Login Id or Password', 'error');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const toggleMode = () => {
-    setIsRegister(!isRegister);
-    navigate(!isRegister ? '/register' : '/login');
+    navigate(isRegister ? '/login' : '/register');
   };
 
   return (
-    <div className="auth-page">
-      <div className="bg-mesh" />
-      
+    <div className="auth-page" style={{ 
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg-page)', padding: '24px', position: 'relative', overflow: 'hidden'
+    }}>
+      {/* Decorative Brand Glows */}
+      <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '40%', background: 'var(--brand-glow)', filter: 'blur(120px)', borderRadius: '50%', zIndex: 0 }} />
+      <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: '40%', height: '40%', background: 'hsla(var(--h), 20%, 80%, 0.2)', filter: 'blur(120px)', borderRadius: '50%', zIndex: 0 }} />
+
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="premium-auth-container"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card"
+        style={{ width: '100%', maxWidth: '420px', padding: '48px', zIndex: 1 }}
       >
-        {/* Left Side: Form Container */}
-        <motion.div 
-          animate={{ x: isRegister ? '100%' : '0%' }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="auth-side"
-        >
-          <AnimatePresence mode="wait">
-            {isRegister ? (
-              <motion.div
-                key="register"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="auth-form-header">
-                  <h2>Create Account</h2>
-                  <p>Join the EcoPulse community today.</p>
-                </div>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ 
+             width: '56px', height: '56px', background: 'var(--brand)', borderRadius: 'var(--radius-md)', 
+             margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+             color: 'white', fontSize: '20px', fontWeight: 800,
+             boxShadow: '0 8px 16px var(--brand-glow)'
+          }}>EP</div>
+          <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '8px' }}>
+            {isRegister ? 'Create Account' : 'Welcome back'}
+          </h2>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.92rem' }}>
+            {isRegister ? 'Join the EcoPulse PLM community' : 'Access your PLM workspace'}
+          </p>
+        </div>
 
-                <form onSubmit={handleRegisterSubmit}>
-                  <div className="form-field">
-                    <label>Full Name</label>
-                    <div className="input-group">
-                      <input
-                        type="text"
-                        name="name"
-                        placeholder="John Doe"
-                        value={registerData.name}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                      <User size={18} />
-                    </div>
-                  </div>
-
-                  <div className="form-field">
-                    <label>Email Address</label>
-                    <div className="input-group">
-                      <input
-                        type="email"
-                        name="email"
-                        placeholder="name@company.com"
-                        value={registerData.email}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                      <Mail size={18} />
-                    </div>
-                  </div>
-
-                  <div className="form-field">
-                    <label>Password</label>
-                    <div className="input-group">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder="••••••••"
-                        value={registerData.password}
-                        onChange={handleRegisterChange}
-                        required
-                      />
-                      <Lock size={18} />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        style={{ position: 'absolute', right: '40px', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-full" disabled={loading} style={{ width: '100%', marginTop: '10px' }}>
-                    {loading ? 'Processing...' : 'Sign Up'} <ArrowRight size={18} />
-                  </button>
-
-                  <div className="divider">Or continue with</div>
-
-                  <button 
-                    type="button" 
-                    className="btn btn-social" 
-                    onClick={() => window.location.href = 'http://localhost:5000/api/v1/auth/google'}
-                  >
-                    <Chrome size={20} /> Google
-                  </button>
-                </form>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="auth-form-header">
-                  <h2>Welcome Back</h2>
-                  <p>Secure access to your account.</p>
-                </div>
-
-                <form onSubmit={handleLoginSubmit}>
-                  <div className="form-field">
-                    <label>Email Address</label>
-                    <div className="input-group">
-                      <input
-                        type="email"
-                        name="email"
-                        placeholder="name@company.com"
-                        value={loginData.email}
-                        onChange={handleLoginChange}
-                        required
-                      />
-                      <Mail size={18} />
-                    </div>
-                  </div>
-
-                  <div className="form-field">
-                    <label>Password</label>
-                    <div className="input-group">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder="••••••••"
-                        value={loginData.password}
-                        onChange={handleLoginChange}
-                        required
-                      />
-                      <Lock size={18} />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        style={{ position: 'absolute', right: '40px', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right', marginBottom: '32px' }}>
-                    <Link to="/forgot-password" style={{ fontSize: '0.9rem', color: 'var(--brand-primary)', fontWeight: '600' }}>
-                      Forgot Password?
-                    </Link>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-full" disabled={loading} style={{ width: '100%' }}>
-                    {loading ? 'Authenticating...' : 'Sign In'} <ArrowRight size={18} />
-                  </button>
-
-                  <div className="divider">Or continue with</div>
-
-                  <button 
-                    type="button" 
-                    className="btn btn-social" 
-                    onClick={() => window.location.href = 'http://localhost:5000/api/v1/auth/google'}
-                  >
-                    <Chrome size={20} /> Google
-                  </button>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          <div className="mobile-toggle" style={{ textAlign: 'center', marginTop: '32px' }}>
-            {isRegister ? "Already have an account?" : "Don't have an account?"}{' '}
-            <span onClick={toggleMode} style={{ color: 'var(--brand-primary)', cursor: 'pointer', fontWeight: '700' }}>
-              {isRegister ? 'Sign In' : 'Sign Up'}
-            </span>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="form-field">
+            <label className="plm-label">Login ID</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                className="plm-input"
+                name="loginId"
+                placeholder="Ex: Engineer123"
+                value={formData.loginId}
+                onChange={handleChange}
+                required
+                style={{ paddingLeft: '40px' }}
+              />
+              <Hash size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            </div>
           </div>
-        </motion.div>
 
-        {/* Right Side: Overlay */}
-        <motion.div 
-          animate={{ x: isRegister ? '-100%' : '0%' }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="auth-overlay-panel"
-          style={{ left: '50%' }}
-        >
-          <AnimatePresence mode="wait">
-            {!isRegister ? (
-              <motion.div
-                key="to-register"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
+          {isRegister && (
+            <div className="form-field">
+              <label className="plm-label">Email Address</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  className="plm-input"
+                  name="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingLeft: '40px' }}
+                />
+                <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              </div>
+            </div>
+          )}
+
+          <div className="form-field">
+            <label className="plm-label">Password</label>
+            <div style={{ position: 'relative' }}>
+              <input 
+                className="plm-input"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                style={{ paddingLeft: '40px' }}
+              />
+              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
               >
-                <h1>New Here?</h1>
-                <p>Join the EcoPulse community and start your journey today!</p>
-                <button className="btn btn-overlay" onClick={toggleMode} style={{ minWidth: '180px' }}>
-                  Create Account
-                </button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="to-login"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-              >
-                <h1>One of us?</h1>
-                <p>Already a member? Sign in to continue where you left off!</p>
-                <button className="btn btn-overlay" onClick={toggleMode} style={{ minWidth: '180px' }}>
-                  Sign In
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {isRegister && (
+            <div className="form-field">
+              <label className="plm-label">Re-Enter Password</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  className="plm-input"
+                  name="rePassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.rePassword}
+                  onChange={handleChange}
+                  required
+                  style={{ paddingLeft: '40px' }}
+                />
+                <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              </div>
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            className="btn-plm btn-brand btn-full" 
+            disabled={loading}
+            style={{ width: '100%', marginTop: '8px', height: '48px', fontSize: '1rem' }}
+          >
+            {loading ? 'Processing...' : (isRegister ? 'SIGN UP' : 'SIGN IN')}
+          </button>
+        </form>
+
+        <div style={{ marginTop: '32px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-dim)' }}>
+          {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+          <button 
+            type="button"
+            onClick={toggleMode}
+            style={{ background: 'none', border: 'none', color: 'var(--brand)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+          >
+            {isRegister ? 'Sign In' : 'Sign Up'}
+          </button>
+        </div>
       </motion.div>
     </div>
   );

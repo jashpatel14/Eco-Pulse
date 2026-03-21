@@ -9,6 +9,7 @@ import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
 import ECOStageBar from '../../components/ECOStageBar';
 import LeadTimeBadge from '../../components/LeadTimeBadge';
+import DiffView from './DiffView';
 
 export default function ECODetail() {
   const { id } = useParams();
@@ -41,10 +42,17 @@ export default function ECODetail() {
 
   const isCreator = eco.userId === user?.id;
   const isAdmin   = user?.role === 'ADMIN';
+  const isEngineer = user?.role === 'ENGINEERING_USER';
+  const isApprover = user?.role === 'APPROVER';
+
   const isApproverForStage = eco.stage?.approval_rules?.some(r => r.userId === user?.id);
   const stageRequiresApproval = eco.stage?.approvalRequired;
+
   const canApproveOrReject = (isApproverForStage || isAdmin) && eco.status === 'IN_REVIEW';
-  const canValidate = !stageRequiresApproval && eco.status === 'IN_REVIEW' && ['ENGINEERING_USER','ADMIN'].includes(user?.role);
+  const canValidate = !stageRequiresApproval && eco.status === 'IN_REVIEW' && (isEngineer || isAdmin);
+  const canStart = isCreator && eco.status === 'DRAFT';
+  const canEdit = (isCreator || isAdmin) && eco.status === 'DRAFT';
+  const canSeeAudit = isAdmin || isApprover || isCreator;
 
   const doAction = async (action, body = {}) => {
     setActionLoading(true);
@@ -78,119 +86,126 @@ export default function ECODetail() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 8 }}>
-            <ArrowLeft size={16} /> ECOs
+          <button className="btn-outline btn-sm" onClick={() => navigate(-1)} style={{ marginBottom: 12 }}>
+            <ArrowLeft size={16} /> Back
           </button>
           <h1 className="page-title">{eco.title}</h1>
-          <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            <StatusBadge status={eco.status} />
-            <RiskBadge level={eco.riskLevel} />
-            <span className={eco.ecoType === 'BOM' ? 'eco-type-bom' : 'eco-type-product'}>{eco.ecoType}</span>
-            {eco.effectiveDate && <LeadTimeBadge effectiveDate={eco.effectiveDate} />}
-          </div>
+          <p className="page-desc">Engineering Change Order Detail</p>
         </div>
         <div className="page-actions">
-          {eco.status === 'DRAFT' && isCreator && (
-            <button className="btn-warning" onClick={doStart} disabled={actionLoading}>
-              <Play size={16} /> Start Review
-            </button>
-          )}
-          {canValidate && (
-            <button className="btn-warning" onClick={() => doAction('validate')} disabled={actionLoading}>
-              <SkipForward size={16} /> Advance Stage
+          {canStart && (
+            <button className="btn-plm" onClick={doStart} disabled={actionLoading}>
+               <Play size={18} /> Start ECO
             </button>
           )}
           {canApproveOrReject && (
             <>
-              <button className="btn-danger" onClick={() => setRejectModal(true)} disabled={actionLoading}>
-                <XCircle size={16} /> Reject
+              <button 
+                className="btn-success" 
+                onClick={() => doAction('approve')} 
+                disabled={actionLoading}
+              >
+                 <CheckCircle size={18} /> Approve
               </button>
-              <button className="btn-success" onClick={() => doAction('approve')} disabled={actionLoading}>
-                <CheckCircle size={16} /> Approve
+              <button 
+                className="btn-danger" 
+                onClick={() => setRejectModal(true)} 
+                disabled={actionLoading} 
+              >
+                 <XCircle size={18} /> Reject
               </button>
             </>
           )}
+          {canValidate && (
+            <button className="btn-plm" onClick={() => doAction('approve')} disabled={actionLoading} style={{ backgroundColor: '#3b82f6' }}>
+               <CheckCircle size={18} /> Validate
+            </button>
+          )}
+          {canEdit && (
+            <>
+               <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-product`)}>
+                  Edit Product
+               </button>
+               <button className="btn-outline" onClick={() => navigate(`/ecos/${id}/edit-bom`)}>
+                  Edit BOM
+               </button>
+            </>
+          )}
+          
           {eco.status === 'APPLIED' && (
-            <span className="applied-tag"><CheckCircle size={16} /> Applied</span>
+            <span className="chip" style={{ fontSize: '0.85rem', padding: '8px 16px' }}>
+               ECO Applied
+            </span>
           )}
         </div>
       </div>
 
-      {/* Stage bar */}
-      <div className="glass-card" style={{ marginBottom: 20, padding: '16px 24px' }}>
-        <ECOStageBar stages={stages} currentStageId={eco.stageId} ecoStatus={eco.status} />
-      </div>
-
       <div className="tab-bar">
-        {[['overview','Overview'],['audit','Audit Trail']].map(([key,label]) => (
-          <button key={key} className={`tab-btn ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>{label}</button>
-        ))}
+        <button className={`tab-btn ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>Overview</button>
+        <button className={`tab-btn ${tab === 'diff' ? 'active' : ''}`} onClick={() => setTab('diff')}>Changes</button>
+        {canSeeAudit && (
+          <button className={`tab-btn ${tab === 'audit' ? 'active' : ''}`} onClick={() => setTab('audit')}>Audit Trail</button>
+        )}
       </div>
 
-      {tab === 'overview' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="detail-grid">
-            <div className="detail-field"><label>Product</label>
-              <span style={{ cursor: 'pointer', color: 'var(--brand-primary)' }} onClick={() => navigate(`/products/${eco.productId}`)}>
-                {eco.product?.name} (v{eco.product?.currentVersion})
-              </span>
-            </div>
-            {eco.bom && (
-              <div className="detail-field"><label>BOM</label>
-                <span style={{ cursor: 'pointer', color: 'var(--brand-primary)' }} onClick={() => navigate(`/boms/${eco.bomId}`)}>
-                  {eco.bom?.reference}
-                </span>
-              </div>
-            )}
-            <div className="detail-field"><label>Change Reason</label><span>{eco.changeReason?.replace(/_/g,' ')}</span></div>
-            <div className="detail-field"><label>Risk Level</label><RiskBadge level={eco.riskLevel} /></div>
-            <div className="detail-field"><label>Version Update</label><span>{eco.versionUpdate ? '✓ Create new version' : '✗ In-place update'}</span></div>
-            <div className="detail-field"><label>Current Stage</label><span className="chip">{eco.stage?.name}</span></div>
-            <div className="detail-field"><label>Created By</label><span>{eco.user?.name}</span></div>
-            <div className="detail-field"><label>Created At</label><span>{new Date(eco.created_at).toLocaleDateString()}</span></div>
-            {eco.effectiveDate && (
-              <div className="detail-field"><label>Effective Date</label><span>{new Date(eco.effectiveDate).toLocaleDateString()}</span></div>
-            )}
+      <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Stage Bar below action area */}
+        <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+           <ECOStageBar stages={stages} currentStageId={eco.stageId} ecoStatus={eco.status} />
+        </div>
+
+        <div className="plm-form">
+          <div className="field-group">
+            <label className="plm-label">Title <span className="req">*</span></label>
+            <input className="plm-input" readOnly value={eco.title} />
           </div>
 
-          {eco.draftChanges?.length > 0 && (
-            <>
-              <div className="section-title" style={{ marginTop: 24 }}>Draft Changes ({eco.draftChanges.length})</div>
-              <div className="table-wrap">
-                <table className="plm-table">
-                  <thead><tr><th>Record Type</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-                  <tbody>
-                    {eco.draftChanges.map(c => (
-                      <tr key={c.id} style={{ cursor: 'default' }}>
-                        <td><span className="chip">{c.recordType}</span></td>
-                        <td>{c.fieldName}</td>
-                        <td className="text-dim">{c.oldValue ?? '—'}</td>
-                        <td>{c.newValue}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+          <div className="form-row">
+            <div className="field-group">
+              <label className="plm-label">ECO Type <span className="req">*</span></label>
+              <input className="plm-input" readOnly value={eco.ecoType === 'BOM' ? 'Bill of Materials' : 'Products'} />
+            </div>
+            <div className="field-group">
+              <label className="plm-label">Product <span className="req">*</span></label>
+              <input className="plm-input" readOnly value={eco.product?.name || '—'} />
+            </div>
+          </div>
+
+          {eco.ecoType === 'BOM' && (
+            <div className="field-group">
+              <label className="plm-label">Bill of Materials <span className="req">*</span></label>
+              <input className="plm-input" readOnly value={eco.bom?.reference || '—'} />
+            </div>
           )}
 
-          {eco.stage?.approval_rules?.length > 0 && (
-            <>
-              <div className="section-title" style={{ marginTop: 24 }}>Designated Approvers for Current Stage</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {eco.stage.approval_rules.map(r => (
-                  <div key={r.id} className="chip">
-                    {r.user?.name} · <span style={{ opacity: 0.7 }}>{r.approvalCategory}</span>
-                  </div>
-                ))}
+          <div className="field-group">
+            <label className="plm-label">User <span className="req">*</span></label>
+            <input className="plm-input" readOnly value={eco.user?.name || 'Admin1'} />
+          </div>
+
+          <div className="form-row">
+            <div className="field-group">
+              <label className="plm-label">Effective Date</label>
+              <input className="plm-input" readOnly value={eco.effectiveDate ? new Date(eco.effectiveDate).toLocaleDateString() : '—'} />
+            </div>
+            <div className="field-group" style={{ justifyContent: 'flex-end', paddingBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="checkbox" checked={eco.versionUpdate} readOnly />
+                <label className="plm-label" style={{ marginBottom: 0 }}>Version Update</label>
               </div>
-            </>
-          )}
-        </motion.div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {tab === 'diff' && (
+        <div style={{ marginTop: '20px' }}>
+          <DiffView eco={eco} />
+        </div>
       )}
 
       {tab === 'audit' && (
-        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ marginTop: '20px' }}>
           {!eco.auditLogs?.length ? (
             <div className="empty-state"><p>No audit trail entries yet.</p></div>
           ) : (

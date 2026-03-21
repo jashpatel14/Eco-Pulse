@@ -47,8 +47,7 @@ export default function ECOList() {
     <div className="plm-page">
       <div className="page-header">
         <div className="page-header-left">
-          <h1 className="page-title"><GitPullRequest size={22} style={{ display:'inline', marginRight: 8 }} />Engineering Change Orders</h1>
-          <p className="page-desc">Track and manage product and BOM change requests</p>
+          <h1 className="page-title">Engineering Change Orders (ECO's)</h1>
         </div>
         <div className="page-actions">
           <button className="btn-outline btn-sm" onClick={() => setShowFilters(!showFilters)}>
@@ -66,7 +65,7 @@ export default function ECOList() {
         <div className="filter-panel">
           <div>
             <label>Search</label>
-            <input className="plm-input" placeholder="Title or product name..." value={filters.search}
+            <input className="plm-input" placeholder="Search by Name, ECO Type, Product..." value={filters.search}
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
           </div>
           <div>
@@ -103,22 +102,29 @@ export default function ECOList() {
             <motion.table className="plm-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <thead>
                 <tr>
-                  <th>Title</th><th>Type</th><th>Product</th><th>Stage</th>
-                  <th>Risk</th><th>Lead Time</th><th>Status</th><th>By</th>
+                  <th>Name / Title</th><th>ECO Type</th><th>Product</th>
                 </tr>
               </thead>
               <tbody>
-                {ecos.map(eco => (
-                  <tr key={eco.id} onClick={() => navigate(`/ecos/${eco.id}`)}>
+                {ecos.map((eco, i) => (
+                  <motion.tr 
+                    key={eco.id} 
+                    onClick={() => navigate(`/ecos/${eco.id}`)}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     <td><strong>{eco.title}</strong></td>
-                    <td><span className={eco.ecoType === 'BOM' ? 'eco-type-bom' : 'eco-type-product'}>{eco.ecoType}</span></td>
+                    <td style={{ color: 'var(--text-dim)' }}>
+                      {eco.ecoType === 'BOM' ? (
+                        <span className="eco-type-bom">Bill of Materials</span>
+                      ) : (
+                        <span className="eco-type-product">Product</span>
+                      )}
+                    </td>
                     <td>{eco.product?.name || '—'}</td>
-                    <td><span className="chip">{eco.stage?.name || '—'}</span></td>
-                    <td><RiskBadge level={eco.riskLevel} /></td>
-                    <td>{eco.effectiveDate ? <LeadTimeBadge effectiveDate={eco.effectiveDate} /> : <span className="dimmed">—</span>}</td>
                     <td><StatusBadge status={eco.status} /></td>
-                    <td className="text-dim">{eco.user?.name || '—'}</td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </motion.table>

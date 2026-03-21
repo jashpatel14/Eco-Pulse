@@ -5,7 +5,7 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
-const WRITE_ROLES = ["ENGINEERING_USER", "ADMIN"];
+const WRITE_ROLES = ["ADMIN"]; // Direct edit ONLY for Admin
 
 async function generateBomReference() {
   const count = await prisma.bOM.count();

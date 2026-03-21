@@ -2,10 +2,11 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../config/prisma");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const { requireRole } = require("../middleware/roleGuard");
 const logger = require("../utils/logger");
 
 // GET /api/v1/reports/ecos
-router.get("/ecos", authMiddleware, async (req, res) => {
+router.get("/ecos", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const ecos = await prisma.eCO.findMany({
       include: {
@@ -24,7 +25,7 @@ router.get("/ecos", authMiddleware, async (req, res) => {
 });
 
 // GET /api/v1/reports/versions?productId=xxx
-router.get("/versions", authMiddleware, async (req, res) => {
+router.get("/versions", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const { productId } = req.query;
     const where = productId ? { productId } : {};
@@ -41,7 +42,7 @@ router.get("/versions", authMiddleware, async (req, res) => {
 });
 
 // GET /api/v1/reports/bom-history?productId=xxx
-router.get("/bom-history", authMiddleware, async (req, res) => {
+router.get("/bom-history", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const { productId } = req.query;
     const where = productId ? { productId } : {};
@@ -62,7 +63,7 @@ router.get("/bom-history", authMiddleware, async (req, res) => {
 });
 
 // GET /api/v1/reports/archived
-router.get("/archived", authMiddleware, async (req, res) => {
+router.get("/archived", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const archived = await prisma.productVersion.findMany({
       where: { status: "ARCHIVED" },
@@ -77,7 +78,7 @@ router.get("/archived", authMiddleware, async (req, res) => {
 });
 
 // GET /api/v1/reports/matrix — Active Product-Version-BoM Matrix
-router.get("/matrix", authMiddleware, async (req, res) => {
+router.get("/matrix", authMiddleware, requireRole("ENGINEERING_USER", "APPROVER", "ADMIN"), async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       where: { status: "ACTIVE" },
