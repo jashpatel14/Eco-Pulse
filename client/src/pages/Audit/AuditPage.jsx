@@ -31,10 +31,10 @@ export default function AuditPage() {
   useEffect(() => { fetch(); }, [filters]);
 
   const ACTION_COLOR = {
-    PRODUCT_CREATED: '#34d399', BOM_CREATED: '#60a5fa', ECO_CREATED: '#c084fc',
-    ECO_STARTED: '#fbbf24', ECO_STAGE_ADVANCED: '#60a5fa', ECO_VALIDATED: '#fbbf24',
-    ECO_APPROVED: '#34d399', ECO_REJECTED: '#f87171', ECO_APPLIED: '#c084fc',
-    PRODUCT_ARCHIVED: '#a1a1aa',
+    PRODUCT_CREATED: 'hsl(140, 40%, 45%)', BOM_CREATED: 'hsl(215, 60%, 50%)', ECO_CREATED: 'hsl(260, 50%, 55%)',
+    ECO_STARTED: 'hsl(45, 100%, 45%)', ECO_STAGE_ADVANCED: 'hsl(215, 60%, 50%)', ECO_VALIDATED: 'hsl(45, 100%, 45%)',
+    ECO_APPROVED: 'hsl(140, 40%, 45%)', ECO_REJECTED: 'hsl(0, 100%, 50%)', ECO_APPLIED: 'hsl(260, 50%, 55%)',
+    PRODUCT_ARCHIVED: 'hsl(220, 10%, 60%)',
   };
 
   return (

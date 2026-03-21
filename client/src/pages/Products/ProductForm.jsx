@@ -41,7 +41,7 @@ export default function ProductForm() {
         <button className="btn-outline btn-sm" onClick={() => navigate(-1)}>
           <ArrowLeft size={16} /> Back
         </button>
-        <button onClick={handleSubmit} className="btn-plm" disabled={loading} style={{ backgroundColor: '#ed8080' }}>
+        <button onClick={handleSubmit} className="btn-plm" disabled={loading} style={{ backgroundColor: 'var(--brand)' }}>
           <Save size={16} /> {loading ? 'Saving…' : 'Save'}
         </button>
       </div>
@@ -71,7 +71,7 @@ export default function ProductForm() {
             <div style={{ display: 'flex', gap: '8px' }}>
               <input className="plm-input" name="attachments" placeholder="Excel, PDF, images, etc." value={form.attachments} onChange={handleChange} style={{ flex: 1 }} />
               <button type="button" style={{ 
-                backgroundColor: '#ed8080', color: 'white', border: 'none', 
+                backgroundColor: 'var(--brand)', color: 'white', border: 'none', 
                 padding: '0 16px', borderRadius: '4px', fontWeight: 600, cursor: 'pointer' 
               }}>
                 Upload

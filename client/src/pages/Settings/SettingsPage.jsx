@@ -105,7 +105,7 @@ export default function SettingsPage() {
                     <tr key={s.id} style={{ cursor: 'default' }}>
                       <td className="text-dim">{i + 1}</td>
                       <td><strong>{s.name}</strong></td>
-                      <td>{s.approvalRequired ? <span style={{ color: '#34d399' }}>✓ Yes</span> : <span className="text-muted">—</span>}</td>
+                      <td>{s.approvalRequired ? <span style={{ color: 'var(--brand)' }}>✓ Yes</span> : <span className="text-muted">—</span>}</td>
                       <td>
                         {s.name !== 'New' && s.name !== 'Done' && (
                           <button className="btn-danger btn-sm" onClick={() => deleteStage(s.id)}>

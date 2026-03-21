@@ -5,7 +5,7 @@ import { Lock, Eye, EyeOff, CheckCircle2, AlertTriangle, GitMerge, BarChart3, Sh
 import { useToast } from '../context/ToastContext';
 import api from '../api/api';
 
-const brand = '#ed8080';
+const brand = 'var(--brand)';
 
 const FEATURES = [
   { icon: <GitMerge size={14} />, text: 'Full ECO lifecycle management' },

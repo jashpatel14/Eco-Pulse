@@ -16,6 +16,12 @@ export default function BOMList() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
+    const handleGlobalSearch = (e) => setSearch(e.detail);
+    window.addEventListener('topNavSearch', handleGlobalSearch);
+    return () => window.removeEventListener('topNavSearch', handleGlobalSearch);
+  }, []);
+
+  useEffect(() => {
     const fetch = async () => {
       try {
         const { data } = await api.get('/boms', { params: { search } });
@@ -46,10 +52,8 @@ export default function BOMList() {
       </div>
 
       <div className="glass-card">
-        <div className="toolbar">
-          <input className="search-input" placeholder="Search by Finished Product..." value={search}
-            onChange={e => setSearch(e.target.value)} />
-        </div>
+        {/* Local toolbar search removed in favor of global navbar search */}
+
 
         {loading ? (
           <div className="empty-state"><div className="spinner"></div></div>

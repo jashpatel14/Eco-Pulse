@@ -2,8 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GitMerge, Layers, ShieldCheck, ArrowRight } from 'lucide-react';
 
-const brand = '#ed8080';
-const brandGlow = 'rgba(237,128,128,0.35)';
+const brand = 'var(--brand)';
+const brandGlow = 'rgba(68, 161, 99, 0.35)';
 
 const FEATURES = [
   { icon: <GitMerge size={26} />, color: brand, bg: 'rgba(237,128,128,0.1)', title: 'Git-Like ECO Workflows', desc: 'Propose draft changes to BOMs and Products without affecting master data until fully approved through every stage.' },

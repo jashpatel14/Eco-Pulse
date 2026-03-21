@@ -66,7 +66,7 @@ export default function BOMForm() {
           </div>
         </div>
 
-        <button onClick={handleSubmit} className="btn-plm" disabled={loading || !productId} style={{ backgroundColor: '#ed8080' }}>
+        <button onClick={handleSubmit} className="btn-plm" disabled={loading || !productId} style={{ backgroundColor: 'var(--brand)' }}>
           <Save size={16} /> {loading ? 'Saving…' : 'Save'}
         </button>
       </div>

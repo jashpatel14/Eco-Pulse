@@ -21,6 +21,12 @@ export default function ECOList() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: '', riskLevel: '', ecoType: '', search: '' });
   const [showFilters, setShowFilters] = useState(true);
+  
+  useEffect(() => {
+    const handleGlobalSearch = (e) => setFilters(f => ({ ...f, search: e.detail }));
+    window.addEventListener('topNavSearch', handleGlobalSearch);
+    return () => window.removeEventListener('topNavSearch', handleGlobalSearch);
+  }, []);
 
   useEffect(() => {
     const fetch = async () => {
@@ -50,20 +56,20 @@ export default function ECOList() {
           <h1 className="page-title">Engineering Change Orders (ECO's)</h1>
         </div>
         <div className="page-actions">
+          {canCreate && (
+            <button className="btn-plm btn-sm" onClick={() => navigate('/ecos/new')}>
+              <Plus size={18} /> New ECO
+            </button>
+          )}
           <button className="btn-outline btn-sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter size={16} /> Filters
           </button>
-          {/* Removed New ECO button as requested */}
         </div>
       </div>
 
       {showFilters && (
         <div className="filter-panel">
-          <div>
-            <label>Search</label>
-            <input className="plm-input" placeholder="Search by Name, ECO Type, Product..." value={filters.search}
-              onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
-          </div>
+          {/* Global search used instead of local input */}
           <div>
             <label>Status</label>
             <select className="plm-select" value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
@@ -98,7 +104,7 @@ export default function ECOList() {
             <motion.table className="plm-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <thead>
                 <tr>
-                  <th>Name / Title</th><th>ECO Type</th><th>Product</th>
+                  <th>Name / Title</th><th>Type</th><th>Product</th><th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,9 +117,9 @@ export default function ECOList() {
                     transition={{ delay: i * 0.05 }}
                   >
                     <td><strong>{eco.title}</strong></td>
-                    <td style={{ color: 'var(--text-dim)' }}>
+                    <td>
                       {eco.ecoType === 'BOM' ? (
-                        <span className="eco-type-bom">Bill of Materials</span>
+                        <span className="eco-type-bom">BoM</span>
                       ) : (
                         <span className="eco-type-product">Product</span>
                       )}

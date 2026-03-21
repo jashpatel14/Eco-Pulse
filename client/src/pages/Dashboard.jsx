@@ -91,9 +91,9 @@ export default function Dashboard() {
           </p>
         </div>
         <span style={{
-          background: 'var(--brand-soft)', color: 'var(--brand-primary)',
-          border: '1px solid #c7d2fe', borderRadius: 999,
-          padding: '4px 14px', fontSize: '0.78rem', fontWeight: 700
+          background: 'var(--brand-soft)', color: 'var(--brand)',
+          border: '1px solid var(--border-light)', borderRadius: 999,
+          padding: '6px 16px', fontSize: '0.8rem', fontWeight: 700
         }}>
           {role?.replace(/_/g, ' ')}
         </span>
@@ -176,10 +176,10 @@ export default function Dashboard() {
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'Draft', value: stats.ecos_draft, color: '#d97706' },
-                      { name: 'In Review', value: stats.ecos_in_review, color: '#2563eb' },
-                      { name: 'Applied', value: stats.ecos_applied, color: '#059669' },
-                      { name: 'Rejected', value: stats.ecos_rejected, color: '#e11d48' },
+                      { name: 'Draft', value: stats.ecos_draft, color: '#f59e0b' },
+                      { name: 'In Review', value: stats.ecos_in_review, color: '#3b82f6' },
+                      { name: 'Applied', value: stats.ecos_applied, color: '#10b981' },
+                      { name: 'Rejected', value: stats.ecos_rejected, color: '#ef4444' },
                     ].filter(d => d.value > 0)}
                     innerRadius={65}
                     outerRadius={85}
@@ -188,10 +188,10 @@ export default function Dashboard() {
                     stroke="none"
                   >
                     {[
-                      { name: 'Draft', value: stats.ecos_draft, color: '#d97706' },
-                      { name: 'In Review', value: stats.ecos_in_review, color: '#2563eb' },
-                      { name: 'Applied', value: stats.ecos_applied, color: '#059669' },
-                      { name: 'Rejected', value: stats.ecos_rejected, color: '#e11d48' },
+                      { name: 'Draft', value: stats.ecos_draft, color: '#f59e0b' },
+                      { name: 'In Review', value: stats.ecos_in_review, color: '#3b82f6' },
+                      { name: 'Applied', value: stats.ecos_applied, color: '#10b981' },
+                      { name: 'Rejected', value: stats.ecos_rejected, color: '#ef4444' },
                     ].filter(d => d.value > 0).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -211,10 +211,10 @@ export default function Dashboard() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
             {[
-              { label: 'Draft', value: stats.ecos_draft, color: '#d97706' },
-              { label: 'In Review', value: stats.ecos_in_review, color: '#2563eb' },
-              { label: 'Applied', value: stats.ecos_applied, color: '#059669' },
-              { label: 'Rejected', value: stats.ecos_rejected, color: '#e11d48' },
+              { label: 'Draft', value: stats.ecos_draft, color: '#f59e0b' },
+              { label: 'In Review', value: stats.ecos_in_review, color: '#3b82f6' },
+              { label: 'Applied', value: stats.ecos_applied, color: '#10b981' },
+              { label: 'Rejected', value: stats.ecos_rejected, color: '#ef4444' },
             ].map(item => {
               const pct = stats.ecos_total ? Math.round((item.value / stats.ecos_total) * 100) : 0;
               return (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, Search, User, LogOut } from 'lucide-react';
@@ -11,19 +11,21 @@ export default function TopNavBar({ toggleSidebar }) {
   const [searchVal, setSearchVal] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Derive Page Title & New Button Route based on current location
-  let pageTitle = '';
-  let newRoute = '';
+  // Clear search on page change
+  useEffect(() => {
+    setSearchVal('');
+    // Notify pages that search is cleared
+    window.dispatchEvent(new CustomEvent('topNavSearch', { detail: '' }));
+  }, [location.pathname]);
 
+  // Derive Page Title based on current location
+  let pageTitle = '';
   if (location.pathname.startsWith('/ecos')) {
     pageTitle = "Engineering Change Orders (ECO's)";
-    newRoute = '/ecos/new';
   } else if (location.pathname.startsWith('/boms')) {
     pageTitle = "Bill of Materials (BOM's)";
-    newRoute = '/boms/new';
   } else if (location.pathname.startsWith('/products')) {
     pageTitle = "Products";
-    newRoute = '/products/new';
   } else if (location.pathname.startsWith('/reports')) {
     pageTitle = "Reporting";
   } else if (location.pathname.startsWith('/settings/stages')) {
@@ -38,13 +40,7 @@ export default function TopNavBar({ toggleSidebar }) {
     pageTitle = "Eco-Pulse PLM";
   }
 
-  const isAdmin = user?.role === 'ADMIN';
-  const isEngineer = user?.role === 'ENGINEERING_USER';
-  
-  let showNewButton = false;
-  if (location.pathname === '/ecos' && (isAdmin || isEngineer)) showNewButton = true;
-  if (location.pathname === '/products' && isAdmin) showNewButton = true;
-  if (location.pathname === '/boms' && isAdmin) showNewButton = true;
+  // Derived state for 'New' button has been removed per user request.
 
   const handleSearch = (e) => {
     setSearchVal(e.target.value);
@@ -52,9 +48,7 @@ export default function TopNavBar({ toggleSidebar }) {
     window.dispatchEvent(new CustomEvent('topNavSearch', { detail: e.target.value }));
   };
 
-  const handleNew = () => {
-    if (newRoute) navigate(newRoute);
-  };
+
 
   return (
     <div className="top-navbar" style={{
@@ -113,19 +107,7 @@ export default function TopNavBar({ toggleSidebar }) {
 
       {/* RIGHT: New Button & Profile Icon */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', minWidth: '200px', justifyContent: 'flex-end' }}>
-        {showNewButton && (
-          <button onClick={handleNew} style={{
-            backgroundColor: '#ed8080',
-            color: 'white',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '4px',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}>
-            New
-          </button>
-        )}
+        {/* Removed 'New' button from global navbar as requested */}
 
         {/* Profile Avatar / Trigger */}
         <div style={{ position: 'relative' }}>
@@ -151,7 +133,7 @@ export default function TopNavBar({ toggleSidebar }) {
             >
               <div style={{ borderBottom: '1px solid #eee', paddingBottom: '12px', marginBottom: '12px' }}>
                 <p style={{ margin: 0, fontWeight: 600 }}>{user?.name || 'User'}</p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#ed8080', fontWeight: 'bold' }}>{user?.role?.replace('_', ' ')}</p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--brand)', fontWeight: 'bold' }}>{user?.role?.replace('_', ' ')}</p>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>{user?.email || ''}</p>
               </div>
               <button 

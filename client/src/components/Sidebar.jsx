@@ -31,12 +31,12 @@ export default function Sidebar({ isOpen, closeSidebar }) {
         style={{
           position: 'fixed', left: 0, top: '60px', bottom: 0,
           width: '260px', zIndex: 1050,
-          backgroundColor: 'var(--surface-color)',
+          backgroundColor: '#ffffff',
           borderRight: '1px solid var(--border-color)',
-          boxShadow: '2px 0 8px rgba(0,0,0,0.05)',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.02)',
           overflowY: 'auto',
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'none'
+          transition: 'all 0.3s var(--ease)'
         }}
       >
         <div style={{ padding: '20px' }}>

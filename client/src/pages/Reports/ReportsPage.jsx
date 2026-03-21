@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart2, Download, Search } from 'lucide-react';
+import { BarChart2, Download, Search, AlertCircle } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
@@ -14,39 +15,64 @@ const TAB_LABELS = {
 };
 
 export default function ReportsPage() {
-  const [tab, setTab] = useState('eco-summary');
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [boms, setBoms] = useState([]);
-  const [selectedBomId, setSelectedBomId] = useState('');
+// track current view to switch content
+const [tab, setTab] = useState('eco-summary');
+// holds results from backend api
+const [data, setData] = useState(null);
+// show spinner while network is busy
+const [loading, setLoading] = useState(false);
+// list for the dropdown filter
+const [products, setProducts] = useState([]);
+// choice for history report filter
+const [selectedProductId, setSelectedProductId] = useState('');
+// list for the other dropdown filter
+const [boms, setBoms] = useState([]);
+// choice for history report filter
+const [selectedBomId, setSelectedBomId] = useState('');
+const { addToast } = useToast();
 
   useEffect(() => {
     api.get('/products').then(r => setProducts(r.data));
     api.get('/boms').then(r => setBoms(r.data));
   }, []);
 
+// grab data whenever tab or filters change
   const fetchData = async () => {
+    // start loading state immediately
     setLoading(true);
     try {
+      // build path based on current tab
       let url = `/reports/${tab}`;
+      // add specific id for history reports
       if (tab === 'product-history' && selectedProductId) {
         url = `/reports/product-history/${selectedProductId}`;
+      // add specific id for history reports
       } else if (tab === 'bom-history' && selectedBomId) {
         url = `/reports/bom-history/${selectedBomId}`;
+      // stop if user hasn't picked an id yet
       } else if (tab === 'product-history' || tab === 'bom-history') {
+        const type = tab === 'product-history' ? 'Product' : 'BOM';
+        addToast(`Please select a ${type} to generate the history report.`, 'warning');
+        // clear old results
         setData(null);
+        // turn off loader
         setLoading(false);
+        // skip network call
         return;
       }
 
+      // ask server for report data
       const res = await api.get(url);
+      // save results to local state
       setData(res.data);
     } catch (err) {
+      // log failure for debugging
       console.error(err);
+      addToast('Failed to generate report. Please try again.', 'error');
+      // reset data if request fails
       setData(null);
     } finally {
+      // always stop loading spinner
       setLoading(false);
     }
   };
@@ -123,25 +149,34 @@ export default function ReportsPage() {
           </div>
         ) : (
           <motion.div className="table-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {tab === 'eco-summary' && (
+            {tab === 'eco-summary' && data?.ecos && (
               <>
+                {/* show high level totals */}
                 <div style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
-                   <div className="stat-pill"><strong>Total:</strong> {data.stats.total}</div>
-                   <div className="stat-pill"><strong>Draft:</strong> {data.stats.draft}</div>
-                   <div className="stat-pill"><strong>In Review:</strong> {data.stats.inReview}</div>
-                   <div className="stat-pill"><strong>Applied:</strong> {data.stats.applied}</div>
+                   <div className="stat-pill"><strong>Total:</strong> {data.stats?.total || 0}</div>
+                   <div className="stat-pill"><strong>Draft:</strong> {data.stats?.draft || 0}</div>
+                   <div className="stat-pill"><strong>In Review:</strong> {data.stats?.inReview || 0}</div>
+                   <div className="stat-pill"><strong>Applied:</strong> {data.stats?.applied || 0}</div>
                 </div>
+                {/* detailed list of changes */}
                 <table className="plm-table">
                   <thead><tr><th>Title</th><th>Product</th><th>Status</th><th>Stage</th><th>By</th><th>Changes</th><th>Created</th></tr></thead>
                   <tbody>
+                    {/* render each eco from list */}
                     {data.ecos.map(eco => (
                       <tr key={eco.id}>
                         <td>{eco.title}</td>
+                        {/* show linked product name */}
                         <td>{eco.product?.name}</td>
+                        {/* visual color bubble for status */}
                         <td><StatusBadge status={eco.status} /></td>
+                        {/* current process step */}
                         <td><span className="chip">{eco.stage?.name}</span></td>
+                        {/* person who made it */}
                         <td>{eco.user?.name}</td>
-                        <td>{eco._count.draftChanges}</td>
+                        {/* count of parts affected */}
+                        <td>{eco._count?.draftChanges || 0}</td>
+                        {/* readable creation date */}
                         <td className="text-dim">{new Date(eco.created_at).toLocaleDateString()}</td>
                       </tr>
                     ))}
@@ -150,16 +185,22 @@ export default function ReportsPage() {
               </>
             )}
 
-            {tab === 'matrix' && (
+            {tab === 'matrix' && Array.isArray(data) && (
               <table className="plm-table">
                 <thead><tr><th>Product Name</th><th>Current Version</th><th>Active BOM</th><th>BOM Version</th><th>Components</th></tr></thead>
                 <tbody>
+                  {/* iterate through product matrix data */}
                   {data.map(row => (
                     <tr key={row.productId}>
+                      {/* bold product name for clarity */}
                       <td><strong>{row.productName}</strong></td>
+                      {/* display current release version */}
                       <td><span className="plm-version-badge">v{row.currentVersion}</span></td>
+                      {/* show name of the manufacturing bill */}
                       <td>{row.activeBOM?.reference || '—'}</td>
+                      {/* show which version of the bill is used */}
                       <td>{row.activeBOM ? row.activeBOM.versionNumber : '—'}</td>
+                      {/* total count of parts in this bill */}
                       <td>{row.activeBOM?.components?.length || 0} items</td>
                     </tr>
                   ))}
@@ -167,19 +208,24 @@ export default function ReportsPage() {
               </table>
             )}
 
-            {tab === 'product-history' && (
+            {tab === 'product-history' && data?.versions && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
                 <div>
                   <h3 style={{ marginBottom: 16, fontSize: '1.1rem' }}>Version Timeline</h3>
                   <table className="plm-table">
                     <thead><tr><th>Version</th><th>Sale Price</th><th>Cost Price</th><th>Status</th><th>Created On</th></tr></thead>
                     <tbody>
+                      {/* list every historical release of product */}
                       {data.versions.map(v => (
                         <tr key={v.id}>
                           <td><span className="plm-version-badge">v{v.versionNumber}</span></td>
-                          <td>₹{parseFloat(v.salePrice).toLocaleString()}</td>
-                          <td>₹{parseFloat(v.costPrice).toLocaleString()}</td>
+                          {/* show customer facing price */}
+                          <td>₹{parseFloat(v.salePrice || 0).toLocaleString()}</td>
+                          {/* show internal manufacturing cost */}
+                          <td>₹{parseFloat(v.costPrice || 0).toLocaleString()}</td>
+                          {/* current lifecycle state of version */}
                           <td><StatusBadge status={v.status} /></td>
+                          {/* precise time this version went live */}
                           <td className="text-dim">{new Date(v.created_at).toLocaleString()}</td>
                         </tr>
                       ))}
@@ -191,11 +237,15 @@ export default function ReportsPage() {
                   <table className="plm-table">
                     <thead><tr><th>ECO Title</th><th>Reason</th><th>Effective Date</th><th>User</th></tr></thead>
                     <tbody>
-                      {data.ecos.map(eco => (
+                      {/* show changes that triggered these versions */}
+                      {(data.ecos || []).map(eco => (
                         <tr key={eco.id}>
                           <td>{eco.title}</td>
+                          {/* brief explanation for the change */}
                           <td>{eco.changeReason}</td>
+                          {/* date the change took effect */}
                           <td>{eco.effectiveDate ? new Date(eco.effectiveDate).toLocaleDateString() : '—'}</td>
+                          {/* engineer who submitted the change */}
                           <td>{eco.user?.name}</td>
                         </tr>
                       ))}
@@ -205,15 +255,20 @@ export default function ReportsPage() {
               </div>
             )}
 
-            {tab === 'bom-history' && (
+            {tab === 'bom-history' && Array.isArray(data) && (
               <table className="plm-table">
                 <thead><tr><th>Action</th><th>By</th><th>Details</th><th>Timestamp</th></tr></thead>
                 <tbody>
+                  {/* show chronological order of all edits */}
                   {data.map(log => (
                     <tr key={log.id}>
-                      <td><span className="chip">{log.action.replace(/_/g,' ')}</span></td>
+                      {/* type of modification made */}
+                      <td><span className="chip">{log.action?.replace(/_/g,' ') || 'ACTION'}</span></td>
+                      {/* person who performed the action */}
                       <td>{log.user?.name}</td>
+                      {/* specific data that was changed */}
                       <td style={{ maxWidth: 400 }}>{log.newValue || log.oldValue || '—'}</td>
+                      {/* exact time of the modification */}
                       <td className="text-dim">{new Date(log.timestamp).toLocaleString()}</td>
                     </tr>
                   ))}
@@ -229,3 +284,22 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+/*
+FILE SUMMARY
+------------
+What this file does: Manages and displays the reports dashboard.
+Why it exists: Provides users with clear audit trails and project summaries.
+Main functions: ReportsPage, fetchData, exportCSV
+Connects to: Sidebar.jsx for navigation, api.js for data.
+Danger zones: Data mapping crashes if API returns empty stats.
+*/
+
