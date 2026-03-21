@@ -1,0 +1,40 @@
+{
+  "name": "ecopulse-server",
+  "version": "1.0.0",
+  "description": "EcoPulse Authentication System - Backend API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": [
+    "pern",
+    "auth",
+    "jwt",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.1",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.0",
+    "rate-limit-redis": "^4.3.1",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.19.2",
+    "prisma": "^6.19.2"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  }
+}

@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id              String         @id @default(uuid()) @db.Uuid
+  name            String         @db.VarChar(100)
+  email           String         @unique @db.VarChar(255)
+  password        String?        @db.VarChar(255)
+  avatar_url      String?        @db.Text
+  role            Role           @default(USER)
+  provider        String         @default("local") @db.VarChar(50)
+  provider_id     String?        @db.VarChar(255)
+  is_verified     Boolean        @default(false)
+  failed_attempts Int            @default(0)
+  locked_until    DateTime?      @db.Timestamptz
+  created_at      DateTime       @default(now()) @db.Timestamptz
+  updated_at      DateTime       @default(now()) @updatedAt @db.Timestamptz
+  email_tokens    EmailToken[]
+  refresh_tokens  RefreshToken[]
+
+  @@map("users")
+}
+
+model EmailToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    String   @db.Uuid
+  token_hash String   @unique @db.VarChar(255)
+  type       String   @db.VarChar(20)
+  expires_at DateTime @db.Timestamptz
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  @@index([token_hash], name: "idx_email_tokens_hash")
+  @@index([user_id], name: "idx_email_tokens_user")
+  @@map("email_tokens")
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    String   @db.Uuid
+  token_hash String   @unique @db.VarChar(255)
+  expires_at DateTime @db.Timestamptz
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  @@index([user_id], name: "idx_rt_user_id")
+  @@index([token_hash], name: "idx_rt_token_hash")
+  @@map("refresh_tokens")
+}
