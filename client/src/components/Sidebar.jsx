@@ -32,7 +32,7 @@ export default function Sidebar({ isOpen, closeSidebar }) {
           position: 'fixed', left: 0, top: 0, bottom: 0,
           width: '260px', zIndex: 1050,
           backgroundColor: '#ffffff',
-          borderRight: '1px solid var(--border-color)',
+          borderRight: '1px solid var(--border-light)',
           boxShadow: 'var(--shadow-md)',
           overflowY: 'auto',
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',

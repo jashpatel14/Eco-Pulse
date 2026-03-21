@@ -57,10 +57,10 @@ export default function NotificationPanel() {
         onClick={() => setOpen(!open)}
         style={{
           position: 'relative', background: open ? 'var(--brand-soft)' : 'transparent',
-          border: '1px solid', borderColor: open ? 'var(--brand-primary)' : 'var(--border-light)',
+          border: '1px solid', borderColor: open ? 'var(--brand)' : 'var(--border-light)',
           borderRadius: 8, width: 32, height: 32,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', color: open ? 'var(--brand-primary)' : 'var(--text-muted)',
+          cursor: 'pointer', color: open ? 'var(--brand)' : 'var(--text-muted)',
           transition: 'all 0.15s',
         }}
       >

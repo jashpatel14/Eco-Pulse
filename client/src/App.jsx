@@ -8,26 +8,9 @@ import PrivateRoute from './components/PrivateRoute';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import LandingPage from './pages/Landing/LandingPage';
-import Profile from './pages/Profile/Profile';
+import Profile      from './pages/Profile/Profile';
 import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-
-// PLM Pages
-import ProductList   from './pages/Products/ProductList';
-import ProductForm   from './pages/Products/ProductForm';
-import ProductDetail from './pages/Products/ProductDetail';
-import BOMList       from './pages/BOM/BOMList';
-import BOMForm       from './pages/BOM/BOMForm';
-import BOMDetail     from './pages/BOM/BOMDetail';
-import ECOList       from './pages/ECO/ECOList';
-import ECOForm       from './pages/ECO/ECOForm';
-import ECODetail     from './pages/ECO/ECODetail';
-import ECODraftProduct from './pages/ECO/ECODraftProduct';
-import ECODraftBOM     from './pages/ECO/ECODraftBOM';
-import ReportsPage   from './pages/Reports/ReportsPage';
-import SettingsPage  from './pages/Settings/SettingsPage';
-import AuditPage     from './pages/Audit/AuditPage';
-import ProfilePage   from './pages/Profile/ProfilePage';
+import ResetPassword  from './pages/ResetPassword';
 
 // Layout — TopNavBar + Slide-out Sidebar
 import TopNavBar from './components/TopNavBar';

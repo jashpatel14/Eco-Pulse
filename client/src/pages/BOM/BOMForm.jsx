@@ -55,7 +55,7 @@ export default function BOMForm() {
             <ArrowLeft size={16} /> Back
           </button>
           <div style={{ 
-            border: '2px dashed var(--border-color)', 
+            border: '2px dashed var(--border-light)', 
             padding: '4px 12px', 
             borderRadius: '4px',
             fontSize: '1rem',
