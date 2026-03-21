@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, Search, User, LogOut } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export default function TopNavBar({ toggleSidebar, isSidebarOpen }) {
   const location = useLocation();
@@ -110,8 +111,7 @@ export default function TopNavBar({ toggleSidebar, isSidebarOpen }) {
 
       {/* RIGHT: New Button & Profile Icon */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', minWidth: '200px', justifyContent: 'flex-end' }}>
-        {/* Removed 'New' button from global navbar as requested */}
-
+        <NotificationBell />
         {/* Profile Avatar / Trigger */}
         <div style={{ position: 'relative' }}>
           <div 
