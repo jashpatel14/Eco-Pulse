@@ -11,11 +11,6 @@ const register = async (req, res) => {
   try {
     const { loginId, email, password, role } = req.body;
 
-    // Default to Engineer if missing or invalid
-    let assignedRole = "ENGINEERING_USER";
-    if (role && ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER"].includes(role)) {
-      assignedRole = role;
-    }
     if (!loginId || loginId.length < 6 || loginId.length > 12) {
       return res.status(400).json({ message: "Login ID must be between 6 and 12 characters." });
     }
@@ -34,7 +29,7 @@ const register = async (req, res) => {
 
     // Role Validation (Exclude ADMIN for security)
     const validRoles = ["ENGINEERING_USER", "APPROVER", "OPERATIONS_USER"];
-    const assignedRole = validRoles.includes(role) ? role : "ENGINEERING_USER";
+    const assignedRole = (role && validRoles.includes(role)) ? role : "ENGINEERING_USER";
 
     // 2. Check Uniqueness
     const existingUser = await prisma.user.findFirst({
@@ -64,7 +59,7 @@ const register = async (req, res) => {
         email,
         password: hashedPassword,
         name: loginId, // Use loginId as default name
-        role: "ENGINEERING_USER", // Default role per spec
+        role: assignedRole,
         is_verified: true, // Auto-verify for now as per previous simplification context but keeping it safe
       }
     });
