@@ -9,6 +9,8 @@ import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import LandingPage from './pages/Landing/LandingPage';
 import Profile from './pages/Profile/Profile';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // PLM Pages
 import ProductList   from './pages/Products/ProductList';
@@ -55,9 +57,11 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/"         element={<LandingPage />} />
-      <Route path="/login"    element={<Auth />} />
-      <Route path="/register" element={<Auth />} />
+      <Route path="/"                element={<LandingPage />} />
+      <Route path="/login"           element={<Auth />} />
+      <Route path="/register"        element={<Auth />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password"  element={<ResetPassword />} />
 
       {/* Protected PLM Routes */}
       <Route path="/*" element={

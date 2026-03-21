@@ -10,7 +10,9 @@ const {
   login,
   getProfile,
   changePassword,
-  deleteAccount
+  deleteAccount,
+  forgotPassword,
+  resetPassword
 } = require("../controllers/authController");
 
 const router = express.Router();
@@ -32,6 +34,8 @@ const validate = (req, res, next) => {
 // ─── Public Routes ───────────────────────────────────────
 router.post("/register", registerValidator, validate, register);
 router.post("/login", loginValidator, validate, login);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 // ─── Protected Routes ────────────────────────────────────
 router.get("/profile", authMiddleware, getProfile);

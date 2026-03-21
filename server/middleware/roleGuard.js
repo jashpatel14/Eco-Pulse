@@ -4,8 +4,6 @@ const requireRole = (...allowedRoles) => {
       return res.status(401).json({ message: "Not logged in" });
     }
 
-    // Role-Based Access Control logic
-    // Admin always has access
     if (req.user.role === "ADMIN") {
       return next();
     }

@@ -1,18 +1,9 @@
-/**
- * enforceActiveOnly.js — Blocks access to archived/draft records
- * for OPERATIONS_USER role and validates active status for productId/bomId references.
- */
 const prisma = require("../config/prisma");
 
 const enforceActiveOnly = async (req, res, next) => {
   try {
     const { productId, bomId } = { ...req.body, ...req.params, ...req.query };
     const role = req.user?.role;
-
-    // OPERATIONS_USER: never see DRAFT or ARCHIVED
-    // (individual route handlers also apply role-based filtering)
-
-    // Validate productId if present
     if (productId) {
       const product = await prisma.product.findUnique({
         where: { id: productId },
@@ -28,7 +19,6 @@ const enforceActiveOnly = async (req, res, next) => {
       }
     }
 
-    // Validate bomId if present
     if (bomId) {
       const bom = await prisma.bOM.findUnique({
         where: { id: bomId },
