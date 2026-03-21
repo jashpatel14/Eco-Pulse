@@ -20,7 +20,7 @@ export default function ECOList() {
   const [ecos, setEcos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ status: '', riskLevel: '', ecoType: '', search: '' });
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
