@@ -73,24 +73,13 @@ async function main() {
 
     // ─── 4. SEED APPROVAL RULES ───────────────────────────────────
     console.log('⚖️ Seeding approval rules...');
-    const approvers = [users['rahul.nair'], users['ananya.iyer']];
-    const targetStages = ['Engineering Review', 'Quality Review', 'Management Approval'];
-
     for (const stageName of targetStages) {
-      // Required Approver
+      // Required Approver: Rahul Nair
       await tx.eCOApprovalRule.create({
         data: {
           stageId: stages[stageName].id,
-          userId: approvers[0].id,
+          userId: users['rahul.nair'].id,
           approvalCategory: 'REQUIRED'
-        }
-      });
-      // Optional Approver
-      await tx.eCOApprovalRule.create({
-        data: {
-          stageId: stages[stageName].id,
-          userId: approvers[1].id,
-          approvalCategory: 'OPTIONAL'
         }
       });
     }

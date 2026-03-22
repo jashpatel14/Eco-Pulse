@@ -101,9 +101,16 @@ router.post("/", authMiddleware, requireRole(...WRITE_ROLES), async (req, res) =
 
 // GET /api/v1/boms/:id
 router.get("/:id", authMiddleware, requireRole(...BOM_ROLES), async (req, res) => {
+  const { id } = req.params;
+  
+  // Validate UUID format to prevent Prisma crash
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return res.status(400).json({ message: "Invalid BOM ID format." });
+  }
+
   try {
     const bom = await prisma.bOM.findUnique({
-      where: { id: req.params.id },
+      where: { id },
       include: {
         components: true,
         operations: true,

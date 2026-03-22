@@ -57,6 +57,21 @@ const Auth = () => {
     }
   };
 
+  const handleDemoLogin = async (loginId) => {
+    if (loading) return;
+    setLoading(true);
+    setFormData({ ...formData, loginId, password: 'Voltex@2025' });
+    try {
+      await login(loginId, 'Voltex@2025');
+      addToast(`Logged in as ${loginId}`, 'success');
+      navigate('/dashboard');
+    } catch (err) {
+      addToast('Demo login failed. Make sure database is seeded.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const inputStyle = { 
     width: '100%', height: '54px', 
     padding: '0 16px 0 16px', 
@@ -146,6 +161,46 @@ const Auth = () => {
             <button type="submit" disabled={loading} className="btn-plm" style={{ width: '100%', height: '52px', marginTop: '4px', justifyContent: 'center' }}>
               {loading ? 'Processing...' : (isRegister ? 'Register Account' : 'Login')}
             </button>
+
+            {!isRegister && (
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Quick Demo Access</span>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {[
+                    { id: 'arjun.mehta', label: 'Engineer' },
+                    { id: 'rahul.nair', label: 'Approver' },
+                    { id: 'amit.verma', label: 'Operations' },
+                    { id: 'vikram.singh', label: 'Admin' }
+                  ].map(demo => (
+                    <motion.button
+                      key={demo.id}
+                      type="button"
+                      whileHover={{ scale: 1.02, backgroundColor: 'rgba(0,0,0,0.02)' }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleDemoLogin(demo.id)}
+                      disabled={loading}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-light)',
+                        background: '#ffffff',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        color: 'var(--text-dim)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {demo.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <p style={{ textAlign: 'center', fontSize: '0.95rem', color: 'var(--text-dim)', marginTop: '12px' }}>
               {isRegister ? 'Already a member? ' : "Not a member? "}

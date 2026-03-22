@@ -58,16 +58,16 @@ router.get("/blame/:id", authMiddleware, requireRole(...PRODUCT_ROLES), async (r
  */
 router.post("/rollback/:id", authMiddleware, requireRole("ENGINEERING_USER", "ADMIN"), async (req, res) => {
   try {
-    const { targetVersion, reason } = req.body;
+    const { targetVersion, reason, autoApply = true } = req.body;
     if (!targetVersion || !reason) return res.status(400).json({ error: "Target version and reason required" });
 
-    const eco = await versionControlService.createRollbackECO(req.params.id, targetVersion, req.user.id, reason);
+    const eco = await versionControlService.createRollbackECO(req.params.id, targetVersion, req.user.id, reason, autoApply);
     
     res.json({
-      message: "Rollback ECO created successfully",
+      message: autoApply ? "Product restored successfully to previous version" : "Rollback ECO created successfully",
       ecoId: eco.id,
       ecoTitle: eco.title,
-      nextStep: "ECO requires approval before being applied"
+      nextStep: autoApply ? "Changes are now live" : "ECO requires approval before being applied"
     });
   } catch (err) {
     logger.error(`Rollback error: ${err.message}`);

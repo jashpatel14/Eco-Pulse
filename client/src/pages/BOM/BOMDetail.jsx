@@ -23,6 +23,12 @@ export default function BOMDetail() {
   const [tab, setTab] = useState('components');
 
   useEffect(() => {
+    if (!id || id === 'null' || id === 'undefined') {
+      addToast('Invalid BOM ID.', 'error');
+      navigate('/boms');
+      return;
+    }
+
     api.get(`/boms/${id}`).then(({ data }) => {
       setBom(data); setLoading(false);
     }).catch(() => {

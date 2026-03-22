@@ -1,5 +1,7 @@
 const prisma = require("../config/prisma");
 const logger = require("../utils/logger");
+const { generateEcoReference } = require("../utils/referenceGenerator");
+const { applyECO } = require("./ecoApplyService");
 
 /**
  * Fetch full version history for a product.
@@ -192,21 +194,25 @@ const getBlameData = async (productId, userRole) => {
 /**
  * Revert to a previous state by creating a new Draft ECO.
  */
-const createRollbackECO = async (productId, targetVersion, userId, reason) => {
-  const [targetBom, targetProd, firstStage] = await Promise.all([
+const createRollbackECO = async (productId, targetVersion, userId, reason, autoApply = true) => {
+  const [targetBom, targetProd, currentBom, firstStage] = await Promise.all([
     prisma.bOM.findFirst({ where: { productId, versionNumber: parseInt(targetVersion) }, include: { components: true, operations: true } }),
     prisma.productVersion.findFirst({ where: { productId, versionNumber: parseInt(targetVersion) } }),
+    prisma.bOM.findFirst({ where: { productId, status: "ACTIVE" }, include: { components: true, operations: true } }),
     prisma.eCOStage.findFirst({ orderBy: { orderIndex: "asc" } })
   ]);
 
   if (!targetProd) throw new Error("Target version not found");
 
-  return await prisma.$transaction(async (tx) => {
+  const rollbackEco = await prisma.$transaction(async (tx) => {
+    const ref = await generateEcoReference();
     const eco = await tx.eCO.create({
       data: {
+        reference: ref,
         title: `Rollback to v${targetVersion}: ${reason}`,
         ecoType: "BOM",
         productId,
+        bomId: currentBom.id,
         userId,
         stageId: firstStage.id,
         changeReason: "DESIGN_UPDATE",
@@ -216,8 +222,23 @@ const createRollbackECO = async (productId, targetVersion, userId, reason) => {
       }
     });
 
-    // Recreate BOM Components (Bulk Insert)
-    const compsToCreate = (targetBom?.components || []).map(comp => ({
+    // 1. Mark everything currently in the BOM for REMOVAL
+    const currentComps = currentBom?.components || [];
+    const compsToRemove = currentComps.map(comp => ({
+      ecoId: eco.id,
+      fieldName: "REMOVE",
+      recordType: "BOM_COMPONENT",
+      recordId: comp.componentName, // We use componentName as recordId for matching in applyService
+      oldValue: JSON.stringify(comp),
+      newValue: "REMOVE"
+    }));
+
+    if (compsToRemove.length > 0) {
+      await tx.eCODraftChange.createMany({ data: compsToRemove });
+    }
+
+    // 2. Add all components from the TARGET version
+    const compsToAdd = (targetBom?.components || []).map(comp => ({
       ecoId: eco.id,
       fieldName: "ADD",
       recordType: "BOM_COMPONENT",
@@ -231,11 +252,35 @@ const createRollbackECO = async (productId, targetVersion, userId, reason) => {
       })
     }));
 
-    if (compsToCreate.length > 0) {
-      await tx.eCODraftChange.createMany({ data: compsToCreate });
+    if (compsToAdd.length > 0) {
+      await tx.eCODraftChange.createMany({ data: compsToAdd });
     }
 
-    // Metadata changes
+    // 3. Handle Operations reconstruction
+    const currentOps = currentBom?.operations || [];
+    const opsToRemove = currentOps.map(op => ({
+      ecoId: eco.id,
+      fieldName: "REMOVE",
+      recordType: "BOM_OPERATION",
+      recordId: op.operationName,
+      newValue: "REMOVE"
+    }));
+    if (opsToRemove.length > 0) await tx.eCODraftChange.createMany({ data: opsToRemove });
+
+    const opsToAdd = (targetBom?.operations || []).map(op => ({
+      ecoId: eco.id,
+      fieldName: "ADD",
+      recordType: "BOM_OPERATION",
+      recordId: op.operationName,
+      newValue: JSON.stringify({
+        operationName: op.operationName,
+        durationMins: op.durationMins,
+        workCenter: op.workCenter
+      })
+    }));
+    if (opsToAdd.length > 0) await tx.eCODraftChange.createMany({ data: opsToAdd });
+
+    // 4. Metadata changes
     await tx.eCODraftChange.create({
       data: { ecoId: eco.id, fieldName: "salePrice", recordType: "PRODUCT", recordId: productId, newValue: targetProd.salePrice.toString() }
     });
@@ -245,6 +290,14 @@ const createRollbackECO = async (productId, targetVersion, userId, reason) => {
 
     return eco;
   });
+
+  // If autoApply is requested, we apply it immediately outside the initial transaction scope
+  if (autoApply) {
+    logger.info(`Auto-applying rollback ECO: ${rollbackEco.id}`);
+    await applyECO(rollbackEco.id);
+  }
+
+  return rollbackEco;
 };
 
 module.exports = {

@@ -53,6 +53,7 @@ export default function ECODetail() {
 
   const canApproveOrReject = (isApproverForStage || isAdmin) && eco.status === 'IN_REVIEW';
   const canValidate = !stageRequiresApproval && eco.status === 'IN_REVIEW' && (isEngineer || isAdmin);
+  const canApply = (user?.role === 'OPERATIONS_USER' || isAdmin) && eco.status === 'APPROVED';
   const canStart = isCreator && eco.status === 'DRAFT';
   const canEdit = (isCreator || isAdmin) && eco.status === 'DRAFT';
   const canSeeAudit = isAdmin || isApprover || isCreator;
@@ -62,7 +63,7 @@ export default function ECODetail() {
     try {
       const { data } = await api.post(`/ecos/${id}/${action}`, body);
       setEco(data);
-      addToast(`ECO ${action}d successfully.`, 'success');
+      addToast(`ECO ${action === 'apply' ? 'implemented' : action + 'd'} successfully.`, 'success');
     } catch (err) {
       addToast(err.response?.data?.message || `Failed to ${action} ECO.`, 'error');
     } finally {
@@ -122,6 +123,13 @@ export default function ECODetail() {
                <CheckCircle size={18} /> Validate
             </button>
           )}
+
+          {canApply && (
+            <button className="btn-success" style={{ background: 'var(--brand-deep)' }} onClick={() => doAction('apply')} disabled={actionLoading}>
+               <CheckCircle size={18} /> Apply Change
+            </button>
+          )}
+
           {canEdit && (
             <>
                <button className="btn-plm" onClick={() => navigate(`/ecos/new?id=${id}`)}>
@@ -141,8 +149,8 @@ export default function ECODetail() {
           )}
           
           {eco.status === 'APPLIED' && (
-            <span className="chip" style={{ fontSize: '0.85rem', padding: '8px 16px' }}>
-               ECO Applied
+            <span className="chip" style={{ fontSize: '0.85rem', padding: '8px 16px', fontWeight: 600, background: '#e6fffa', color: '#2c7a7b', border: '1px solid #b2f5ea' }}>
+               ECO Implemented (Applied)
             </span>
           )}
         </div>

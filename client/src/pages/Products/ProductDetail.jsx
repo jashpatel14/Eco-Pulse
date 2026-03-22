@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Package, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw, Paperclip } from 'lucide-react';
+import { Package, GitPullRequest, Edit, Clock, GitCompare, UserCheck, RotateCcw, Paperclip, ClipboardList } from 'lucide-react';
 import api from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
@@ -22,12 +22,18 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('info');
+  const [activeBomId, setActiveBomId] = useState(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
         const { data } = await api.get(`/products/${id}`);
         setProduct(data);
+        // Find the active BOM for this product
+        if (data.boms && data.boms.length > 0) {
+          const activeBom = data.boms.find(b => b.status === 'ACTIVE') || data.boms[0];
+          setActiveBomId(activeBom.id);
+        }
       } catch {
         addToast('Product not found.', 'error');
         navigate('/products');
@@ -57,6 +63,11 @@ export default function ProductDetail() {
           {canEdit && (
             <button className="btn-outline" onClick={() => navigate(`/products/${id}/edit`)}>
               <Edit size={18} /> Edit Product
+            </button>
+          )}
+          {activeBomId && (
+            <button className="btn-outline" onClick={() => navigate(`/boms/${activeBomId}`)}>
+              <ClipboardList size={18} /> View BOM
             </button>
           )}
           {canRaiseECO && (
@@ -152,6 +163,14 @@ export default function ProductDetail() {
                 <UserCheck size={32} color="#059669" style={{ marginBottom: '12px' }} />
                 <h3 style={{ margin: 0 }}>Blame (Contributors)</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Trace each field to its origin ECO</p>
+              </div>
+            )}
+
+            {activeBomId && (
+              <div className="glass-card hover-card" onClick={() => navigate(`/boms/${activeBomId}`)} style={{ cursor: 'pointer', padding: '24px', textAlign: 'center' }}>
+                <ClipboardList size={32} color="#8b5cf6" style={{ marginBottom: '12px' }} />
+                <h3 style={{ margin: 0 }}>View BOM</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Components & Manufacturing Operations</p>
               </div>
             )}
 

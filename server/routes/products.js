@@ -95,7 +95,10 @@ router.get("/:id", authMiddleware, requireRole(...PRODUCT_ROLES), async (req, re
   try {
     const product = await prisma.product.findUnique({
       where: { id: req.params.id },
-      include: { versions: { orderBy: { versionNumber: "desc" } } },
+      include: { 
+        versions: { orderBy: { versionNumber: "desc" } },
+        boms: { select: { id: true, status: true, versionNumber: true } }
+      },
     });
     if (!product) return res.status(404).json({ message: "Product not found." });
 

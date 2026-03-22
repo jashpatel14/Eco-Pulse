@@ -13,6 +13,16 @@ export default function DiffView({ eco }) {
   const isProductECO = eco.ecoType === 'PRODUCT';
   const isBOMECO = eco.ecoType === 'BOM';
 
+  // Safe JSON Parsing Helper
+  const safeParse = (val) => {
+    if (!val || val === '—' || val === 'REMOVE') return null;
+    try {
+      return JSON.parse(val);
+    } catch (e) {
+      return null;
+    }
+  };
+
   // ─── Render Product Diff ─────────────────────────────────────────
   const renderProductDiff = () => {
     const fields = [
@@ -30,10 +40,8 @@ export default function DiffView({ eco }) {
             if (!change) return null;
             let val = change.oldValue || '—';
             if (f.key === 'attachments') {
-                try {
-                    const parsed = JSON.parse(val);
-                    val = Array.isArray(parsed) ? parsed.join(', ') : val;
-                } catch(e) {}
+                const parsed = safeParse(val);
+                if (parsed && Array.isArray(parsed)) val = parsed.join(', ');
             }
             return (
               <div key={`old-${f.key}`} className="diff-card old">
@@ -50,10 +58,8 @@ export default function DiffView({ eco }) {
             if (!change) return null;
             let val = change.newValue || '—';
             if (f.key === 'attachments') {
-                try {
-                    const parsed = JSON.parse(val);
-                    val = Array.isArray(parsed) ? parsed.join(', ') : val;
-                } catch(e) {}
+                const parsed = safeParse(val);
+                if (parsed && Array.isArray(parsed)) val = parsed.join(', ');
             }
             return (
               <div key={`new-${f.key}`} className="diff-card new">
@@ -97,8 +103,8 @@ export default function DiffView({ eco }) {
                 <tbody>
                   {compChanges.map(c => {
                     const status = getStatusInfo(c.fieldName);
-                    const oldData = c.oldValue ? JSON.parse(c.oldValue) : null;
-                    const newData = c.newValue ? JSON.parse(c.newValue) : null;
+                    const oldData = safeParse(c.oldValue);
+                    const newData = safeParse(c.newValue);
 
                     return (
                       <tr key={c.id} className={status.class}>
@@ -141,8 +147,8 @@ export default function DiffView({ eco }) {
                 <tbody>
                   {opChanges.map(c => {
                     const status = getStatusInfo(c.fieldName);
-                    const oldData = c.oldValue ? JSON.parse(c.oldValue) : null;
-                    const newData = c.newValue ? JSON.parse(c.newValue) : null;
+                    const oldData = safeParse(c.oldValue);
+                    const newData = safeParse(c.newValue);
 
                     return (
                       <tr key={c.id} className={status.class}>

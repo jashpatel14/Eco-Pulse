@@ -38,7 +38,8 @@ const BOMRollback = () => {
         reason: rollbackReason
       });
       addToast(res.data.message, "success");
-      navigate(`/ecos/${res.data.ecoId}`);
+      // Navigate back to BOM detail to see the new active version
+      navigate(`/boms/${id}`);
     } catch (err) {
       addToast(err.response?.data?.error || "Rollback failed", "error");
     } finally {
@@ -117,8 +118,8 @@ const BOMRollback = () => {
               <h2 className="modal-title" style={{ margin: 0 }}>Restore BOM {targetVer.label}</h2>
             </div>
             <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
-              This will create a new <strong>Draft ECO</strong> to restore all BOM components from {targetVer.label}.
-              The ECO must be approved before any changes are applied.
+              This will automatically restore all BOM components and metadata from <strong>{targetVer.label}</strong>.
+              A system-generated ECO will be created and <strong>applied immediately</strong> to preserve the audit trail.
             </p>
             <div className="field-group" style={{ marginBottom: '20px' }}>
               <label className="plm-label">Reason for Rollback (Required)</label>
@@ -130,7 +131,7 @@ const BOMRollback = () => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
               <button className="btn-outline" onClick={() => setModalOpen(false)}>Cancel</button>
               <button className="btn-plm" style={{ background: '#e11d48' }} onClick={handleRollback} disabled={submitting}>
-                {submitting ? 'Creating ECO...' : 'Initiate Rollback'}
+                {submitting ? 'Restoring Version...' : 'Confirm Restore'}
               </button>
             </div>
           </div>

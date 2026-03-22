@@ -45,7 +45,8 @@ const ProductRollback = () => {
         reason: rollbackReason
       });
       addToast(res.data.message, "success");
-      navigate(`/ecos/${res.data.ecoId}`);
+      // Navigate back to product detail to see the new active version
+      navigate(`/products/${id}`);
     } catch (err) {
       addToast(err.response?.data?.error || "Rollback failed", "error");
     } finally {
@@ -123,8 +124,8 @@ const ProductRollback = () => {
             </div>
             
             <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '24px' }}>
-              This will create a new <strong>Draft ECO</strong> to restore all components and metadata from version {targetVer.versionNumber}. 
-              The ECO must go through the normal approval workflow before any changes are applied. No existing data will be deleted.
+              This will automatically restore all product metadata and associated state from <strong>version {targetVer.versionNumber}</strong>. 
+              A system-generated ECO will be created and <strong>applied immediately</strong> to preserve the audit trail.
             </p>
 
             <div className="field-group" style={{ marginBottom: '20px' }}>
@@ -141,7 +142,7 @@ const ProductRollback = () => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px' }}>
               <button className="btn-outline" onClick={() => setModalOpen(false)}>Cancel</button>
               <button className="btn-plm" style={{ background: '#e11d48' }} onClick={handleRollback} disabled={submitting}>
-                {submitting ? 'Creating ECO...' : 'Initiate Rollback'}
+                {submitting ? 'Restoring Version...' : 'Confirm Restore'}
               </button>
             </div>
           </div>

@@ -9,14 +9,14 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const isOpsUser = req.user.role === "OPERATIONS_USER";
     const statusFilter = isOpsUser ? { status: "ACTIVE" } : {};
-    
+
     const productsCount = await prisma.product.count({ where: statusFilter });
     const bomsCount = await prisma.bOM.count({ where: statusFilter });
-    
+
     // Group ECO counts by status
     const ecoStatusCounts = await prisma.eCO.groupBy({
-      by: ['status'],
-      where: isOpsUser ? { status: { notIn: ["DRAFT", "ARCHIVED"] } } : {},
+      by: ["status"],
+      where: isOpsUser ? { status: { notIn: ["DRAFT"] } } : {},
       _count: {
         status: true,
       },
@@ -31,7 +31,7 @@ router.get("/", authMiddleware, async (req, res) => {
       REJECTED: 0,
     };
 
-    ecoStatusCounts.forEach(item => {
+    ecoStatusCounts.forEach((item) => {
       ecos[item.status] = item._count.status;
       ecos.total += item._count.status;
     });
@@ -39,7 +39,7 @@ router.get("/", authMiddleware, async (req, res) => {
     res.json({
       products: productsCount,
       boms: bomsCount,
-      ecos
+      ecos,
     });
   } catch (err) {
     logger.error("Error fetching stats:", err);

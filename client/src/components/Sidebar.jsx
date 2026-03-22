@@ -70,12 +70,10 @@ export default function Sidebar({ isOpen, closeSidebar }) {
             </NavLink>
 
             {/* Engineering Change Orders */}
-            {role !== 'OPERATIONS_USER' && (
-              <NavLink to="/ecos" onClick={closeSidebar} className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}>
-                <GitPullRequest size={18} />
-                <span>Engineering Change Orders</span>
-              </NavLink>
-            )}
+            <NavLink to="/ecos" onClick={closeSidebar} className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}>
+              <GitPullRequest size={18} />
+              <span>Engineering Change Orders</span>
+            </NavLink>
 
             {/* Master Data (Expandable) */}
             <div 
