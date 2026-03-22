@@ -29,7 +29,7 @@ async function main() {
     await tx.product.deleteMany({});
     await tx.refreshToken.deleteMany({});
     await tx.emailToken.deleteMany({});
-    await tx.user.deleteMany({});
+    // User deletion removed as per user request to preserve accounts
 
     // ─── 2. SEED USERS (8 Users) ──────────────────────────────────
     console.log('👥 Seeding users...');
@@ -46,8 +46,14 @@ async function main() {
 
     const users = {};
     for (const u of usersData) {
-      users[u.loginId] = await tx.user.create({
-        data: {
+      users[u.loginId] = await tx.user.upsert({
+        where: { loginId: u.loginId },
+        update: {
+          role: u.role,
+          name: u.name,
+          email: u.email
+        },
+        create: {
           ...u,
           password: defaultPassword,
           is_verified: true,

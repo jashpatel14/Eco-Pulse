@@ -164,96 +164,98 @@ export default function ECODetail() {
         )}
       </div>
 
-      <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        {/* Stage Bar below action area */}
-        <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-           <ECOStageBar stages={stages} currentStageId={eco.stageId} ecoStatus={eco.status} />
-        </div>
-
-        <div className="plm-form">
-          <div className="form-row">
-            <div className="field-group">
-              <label className="plm-label">Reference</label>
-              <div style={{ fontWeight: 700, color: 'var(--brand-deep)', fontSize: '1.1rem' }}>{eco.reference || '—'}</div>
-            </div>
-            <div className="field-group">
-              <label className="plm-label">Priority</label>
-              <RiskBadge risk={eco.priority || 'MEDIUM'} />
-            </div>
+      {tab === 'overview' && (
+        <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          {/* Stage Bar below action area */}
+          <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <ECOStageBar stages={stages} currentStageId={eco.stageId} ecoStatus={eco.status} />
           </div>
 
-          <div className="field-group">
-            <label className="plm-label">Title <span className="req">*</span></label>
-            <input className="plm-input" readOnly value={eco.title} />
-          </div>
-
-          <div className="form-row">
-            <div className="field-group">
-              <label className="plm-label">ECO Type <span className="req">*</span></label>
-              <input className="plm-input" readOnly value={eco.ecoType === 'BOM' ? 'Bill of Materials' : 'Products'} />
-            </div>
-            <div className="field-group">
-              <label className="plm-label">Product <span className="req">*</span></label>
-              <input className="plm-input" readOnly value={eco.product?.name || '—'} />
-            </div>
-          </div>
-
-          {eco.ecoType === 'BOM' && (
-            <div className="field-group">
-              <label className="plm-label">Bill of Materials <span className="req">*</span></label>
-              <input className="plm-input" readOnly value={eco.bom?.reference || '—'} />
-            </div>
-          )}
-
-          <div className="field-group">
-            <label className="plm-label">User <span className="req">*</span></label>
-            <input className="plm-input" readOnly value={eco.user?.name || 'Admin1'} />
-          </div>
-
-          <div className="form-row">
-            <div className="field-group">
-              <label className="plm-label">Effective Date</label>
-              <input className="plm-input" readOnly value={eco.effectiveDate ? new Date(eco.effectiveDate).toLocaleDateString() : '—'} />
-            </div>
-            <div className="field-group" style={{ justifyContent: 'flex-end', paddingBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" checked={eco.versionUpdate} readOnly />
-                <label className="plm-label" style={{ marginBottom: 0 }}>Version Update</label>
+          <div className="plm-form">
+            <div className="form-row">
+              <div className="field-group">
+                <label className="plm-label">Reference</label>
+                <div style={{ fontWeight: 700, color: 'var(--brand-deep)', fontSize: '1.1rem' }}>{eco.reference || '—'}</div>
+              </div>
+              <div className="field-group">
+                <label className="plm-label">Priority</label>
+                <RiskBadge risk={eco.priority || 'MEDIUM'} />
               </div>
             </div>
-          </div>
 
-          {eco.attachments?.length > 0 && (
-            <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
-              <label className="plm-label">Attachments</label>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
-                {eco.attachments.map((att, i) => (
-                  <a 
-                    key={i} 
-                    href={getFileUrl(att)} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="chip" 
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '8px', 
-                      padding: '8px 16px',
-                      textDecoration: 'none',
-                      color: 'var(--brand-deep)',
-                      background: 'white',
-                      border: '1px solid var(--border-light)'
-                    }}
-                  >
-                    <Paperclip size={14} />
-                    <span style={{ fontWeight: 500 }}>{att.split('/').pop().replace(/^\d+-[\da-f]+-/, '')}</span>
-                  </a>
-                ))}
+            <div className="field-group">
+              <label className="plm-label">Title <span className="req">*</span></label>
+              <input className="plm-input" readOnly value={eco.title} />
+            </div>
+
+            <div className="form-row">
+              <div className="field-group">
+                <label className="plm-label">ECO Type <span className="req">*</span></label>
+                <input className="plm-input" readOnly value={eco.ecoType === 'BOM' ? 'Bill of Materials' : 'Products'} />
+              </div>
+              <div className="field-group">
+                <label className="plm-label">Product <span className="req">*</span></label>
+                <input className="plm-input" readOnly value={eco.product?.name || '—'} />
               </div>
             </div>
-          )}
-        </div>
-      </motion.div>
+
+            {eco.ecoType === 'BOM' && (
+              <div className="field-group">
+                <label className="plm-label">Bill of Materials <span className="req">*</span></label>
+                <input className="plm-input" readOnly value={eco.bom?.reference || '—'} />
+              </div>
+            )}
+
+            <div className="field-group">
+              <label className="plm-label">User <span className="req">*</span></label>
+              <input className="plm-input" readOnly value={eco.user?.name || 'Admin1'} />
+            </div>
+
+            <div className="form-row">
+              <div className="field-group">
+                <label className="plm-label">Effective Date</label>
+                <input className="plm-input" readOnly value={eco.effectiveDate ? new Date(eco.effectiveDate).toLocaleDateString() : '—'} />
+              </div>
+              <div className="field-group" style={{ justifyContent: 'flex-end', paddingBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input type="checkbox" checked={eco.versionUpdate} readOnly />
+                  <label className="plm-label" style={{ marginBottom: 0 }}>Version Update</label>
+                </div>
+              </div>
+            </div>
+
+            {eco.attachments?.length > 0 && (
+              <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
+                <label className="plm-label">Attachments</label>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+                  {eco.attachments.map((att, i) => (
+                    <a 
+                      key={i} 
+                      href={getFileUrl(att)} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="chip" 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        padding: '8px 16px',
+                        textDecoration: 'none',
+                        color: 'var(--brand-deep)',
+                        background: 'white',
+                        border: '1px solid var(--border-light)'
+                      }}
+                    >
+                      <Paperclip size={14} />
+                      <span style={{ fontWeight: 500 }}>{att.split('/').pop().replace(/^\d+-[\da-f]+-/, '')}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {tab === 'diff' && (
         <div style={{ marginTop: '20px' }}>

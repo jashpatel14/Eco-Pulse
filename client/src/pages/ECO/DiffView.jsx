@@ -169,6 +169,11 @@ export default function DiffView({ eco }) {
             </div>
           </div>
         )}
+        {compChanges.length === 0 && opChanges.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p className="text-dim italic">This ECO has draft data, but it doesn't match BOM component or operation formats.</p>
+          </div>
+        )}
       </div>
     );
   };
