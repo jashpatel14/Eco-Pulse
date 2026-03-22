@@ -1,8 +1,8 @@
-# 🌿 EcoPulse PLM
+# EcoPulse PLM
 
 **EcoPulse** is a premium, industry-standard Product Lifecycle Management (PLM) system designed for modern engineering teams. It bridges the gap between complex industrial data and a clean, high-performance SaaS user experience.
 
-![Dashboard Mockup](client/src/assets/logo.png) *(Note: Replace with actual screenshot in production)*
+!<img width="1919" height="903" alt="image" src="https://github.com/user-attachments/assets/65e66177-e47e-4b65-b393-ae46975f851b" />
 
 ---
 
