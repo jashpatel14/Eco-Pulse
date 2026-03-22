@@ -20,22 +20,6 @@ export default function BackButton({ to, label = "Back", className = "" }) {
       whileHover={{ x: -4 }}
       whileTap={{ scale: 0.96 }}
       className={`btn-back-modern ${className}`}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '8px 16px',
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-medium)',
-        color: 'var(--text-main)',
-        borderRadius: 'var(--radius-lg)',
-        fontSize: '0.85rem',
-        fontWeight: '600',
-        cursor: 'pointer',
-        transition: 'all 0.2s var(--ease)',
-        boxShadow: 'var(--shadow-sm)',
-        marginBottom: '16px'
-      }}
     >
       <motion.div
         initial={{ x: 0 }}

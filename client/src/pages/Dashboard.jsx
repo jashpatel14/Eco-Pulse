@@ -5,6 +5,25 @@ import { Package, ClipboardList, GitPullRequest, BarChart2, CheckCircle, AlertCi
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
+import Skeleton, { SkeletonCard } from '../components/Skeleton';
+
+function CountUp({ value }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const end = parseInt(value);
+    if (start === end) return;
+    let totalMiliseconds = 800;
+    let incrementTime = totalMiliseconds / end;
+    let timer = setInterval(() => {
+      start += 1;
+      setCount(start);
+      if (start === end) clearInterval(timer);
+    }, incrementTime);
+    return () => clearInterval(timer);
+  }, [value]);
+  return <span>{count}</span>;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -15,8 +34,10 @@ export default function Dashboard() {
     ecos_draft: 0, ecos_in_review: 0, ecos_applied: 0, ecos_rejected: 0
   });
   const [recentEcos, setRecentEcos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
       api.get('/stats'),
       api.get('/ecos?take=5')
@@ -33,6 +54,8 @@ export default function Dashboard() {
       setRecentEcos(ecosRes.data || []);
     }).catch(err => {
       console.error("Failed to load dashboard data", err);
+    }).finally(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -101,30 +124,45 @@ export default function Dashboard() {
         </span>
       </div>
 
-      {/* Stat cards */}
-      <motion.div
-        className="stat-grid"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        {cards.map((card, i) => (
-          <motion.div
-            key={card.label}
-            className={`stat-card ${card.cls}`}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
-            onClick={() => navigate(card.nav)}
-          >
-            <div className="stat-icon-wrap">
-              <card.icon size={20} />
-            </div>
-            <div className="stat-value">{card.value}</div>
-            <div className="stat-label">{card.label}</div>
-          </motion.div>
-        ))}
-      </motion.div>
+      {loading ? (
+        <div className="stat-grid">
+          {[1,2,3,4,5,6].slice(0, cards.length).map(i => <SkeletonCard key={i} />)}
+        </div>
+      ) : (
+        <motion.div
+          className="stat-grid"
+          variants={{
+            hidden: { opacity: 0 },
+            show: {
+              opacity: 1,
+              transition: { staggerChildren: 0.1 }
+            }
+          }}
+          initial="hidden"
+          animate="show"
+        >
+          {cards.map((card, i) => (
+            <motion.div
+              key={card.label}
+              className={`stat-card ${card.cls}`}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                show: { opacity: 1, y: 0 }
+              }}
+              whileHover={{ y: -5, boxShadow: 'var(--shadow-lg)' }}
+              onClick={() => navigate(card.nav)}
+            >
+              <div className="stat-icon-wrap">
+                <card.icon size={20} />
+              </div>
+              <div className="stat-value">
+                <CountUp value={card.value} />
+              </div>
+              <div className="stat-label">{card.label}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
 
       {/* Quick Actions + Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 4, alignItems: 'start' }}>

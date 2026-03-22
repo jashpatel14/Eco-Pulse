@@ -4,6 +4,7 @@ import { Shield } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import api from '../../api/api';
 import { useToast } from '../../context/ToastContext';
+import { formatLogDetail } from '../../utils/formatUtils';
 
 const RECORD_TYPES = ['','PRODUCT','BOM','ECO'];
 
@@ -83,17 +84,24 @@ export default function AuditPage() {
                 {logs.map(log => (
                   <tr key={log.id} style={{ cursor: 'default' }}>
                     <td>
-                      <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, background: `${ACTION_COLOR[log.action] || '#a1a1aa'}18`, color: ACTION_COLOR[log.action] || '#a1a1aa', border: `1px solid ${ACTION_COLOR[log.action] || '#a1a1aa'}40` }}>
-                        {log.action.replace(/_/g,' ')}
+                      <span style={{ 
+                        display: 'inline-flex', padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, 
+                        background: `${ACTION_COLOR[log.action || ''] || '#a1a1aa'}18`, 
+                        color: ACTION_COLOR[log.action || ''] || '#a1a1aa', 
+                        border: `1px solid ${ACTION_COLOR[log.action || ''] || '#a1a1aa'}40` 
+                      }}>
+                        {(log.action || 'ACTION').replace(/_/g,' ')}
                       </span>
                     </td>
-                    <td><span className="chip">{log.recordType}</span></td>
-                    <td className="text-muted" style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{log.recordId.slice(0,8)}…</td>
-                    <td className="text-dim" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {log.newValue || log.oldValue || '—'}
+                    <td><span className="chip">{log.recordType || '—'}</span></td>
+                    <td className="text-muted" style={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
+                      {log.recordId ? `${String(log.recordId).slice(0, 8)}…` : '—'}
+                    </td>
+                    <td className="text-dim" style={{ maxWidth: 300 }}>
+                      {formatLogDetail(log.newValue || log.oldValue)}
                     </td>
                     <td>{log.user?.name || '—'}</td>
-                    <td className="text-muted">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="text-muted">{log.timestamp ? new Date(log.timestamp).toLocaleString() : '—'}</td>
                   </tr>
                 ))}
               </tbody>

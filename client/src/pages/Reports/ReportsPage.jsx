@@ -10,6 +10,7 @@ import api from '../../api/api';
 import StatusBadge from '../../components/StatusBadge';
 import RiskBadge from '../../components/RiskBadge';
 import CustomSelect from '../../components/CustomSelect';
+import { formatLogDetail } from '../../utils/formatUtils';
 
 const TABS = ['eco-summary', 'matrix', 'product-history', 'bom-history'];
 const TAB_LABELS = { 
@@ -297,7 +298,9 @@ export default function ReportsPage() {
                         <tr key={log.id}>
                           <td><span className="chip">{log.action?.replace(/_/g,' ')}</span></td>
                           <td>{log.user?.name}</td>
-                          <td style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.newValue || log.oldValue || '—'}</td>
+                          <td style={{ maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {formatLogDetail(log.newValue || log.oldValue)}
+                          </td>
                           <td className="text-dim">{new Date(log.timestamp).toLocaleString()}</td>
                         </tr>
                       ))}

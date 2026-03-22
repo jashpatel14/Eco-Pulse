@@ -49,14 +49,15 @@ export const ConfirmProvider = ({ children }) => {
       {children}
       <AnimatePresence>
         {modal.isOpen && (
-          <div className="modal-overlay" onClick={modal.onCancel} style={{ zIndex: 3000 }}>
+          <div className="modal-overlay" onClick={modal.onCancel} style={{ zIndex: 3000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
             <motion.div 
               className="modal-box confirm-modal"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
               onClick={e => e.stopPropagation()}
-              style={{ overflow: 'hidden', padding: 0, borderRadius: '24px' }}
+              style={{ overflow: 'hidden', padding: 0, borderRadius: '24px', background: 'white', boxShadow: 'var(--shadow-lg)', width: '90%', maxWidth: '400px' }}
             >
               <div style={{ padding: '24px 28px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '12px' }}>
@@ -73,17 +74,17 @@ export const ConfirmProvider = ({ children }) => {
                   </button>
                 </div>
 
-                <div className="modal-actions" style={{ marginTop: '32px' }}>
-                  <button className="btn-outline" onClick={modal.onCancel} style={{ minWidth: '100px' }}>
+                <div className="modal-actions" style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                  <AnimatedButton variant="outline" onClick={modal.onCancel} style={{ minWidth: '100px' }}>
                     {modal.cancelText}
-                  </button>
-                  <button 
-                    className={modal.type === 'danger' ? 'btn-danger' : 'btn-plm'} 
+                  </AnimatedButton>
+                  <AnimatedButton 
+                    variant={modal.type === 'danger' ? 'danger' : 'primary'} 
                     onClick={modal.onConfirm}
                     style={{ minWidth: '120px' }}
                   >
                     {modal.confirmText}
-                  </button>
+                  </AnimatedButton>
                 </div>
               </div>
               

@@ -20,7 +20,6 @@ const ECO_INCLUDE = {
   user: { select: { id: true, name: true, email: true } },
   stage: { include: { approval_rules: { include: { user: { select: { id: true, name: true } } } } } },
   draftChanges: true,
-  attachments: true,
 };
 
 // GET /api/v1/ecos

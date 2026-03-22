@@ -12,6 +12,7 @@ import ECOStageBar from '../../components/ECOStageBar';
 import LeadTimeBadge from '../../components/LeadTimeBadge';
 import DiffView from './DiffView';
 import { getFileUrl } from '../../utils/fileUtils';
+import { formatLogDetail } from '../../utils/formatUtils';
 
 export default function ECODetail() {
   const { id } = useParams();
@@ -265,8 +266,8 @@ export default function ECODetail() {
                     <tr key={log.id} style={{ cursor: 'default' }}>
                       <td><span className="chip">{log.action.replace(/_/g,' ')}</span></td>
                       <td>{log.user?.name || '—'}</td>
-                      <td className="text-dim" style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {log.newValue || log.oldValue || '—'}
+                      <td className="text-dim" style={{ maxWidth: 350 }}>
+                        {formatLogDetail(log.newValue || log.oldValue)}
                       </td>
                       <td className="text-dim">{new Date(log.timestamp).toLocaleString()}</td>
                     </tr>

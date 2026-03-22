@@ -1,10 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import Sidebar from './components/Sidebar';
 import PrivateRoute from './components/PrivateRoute';
 import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './components/PageTransition';
 
 // Common Components
 import TopNavBar from './components/TopNavBar';
@@ -72,56 +74,62 @@ function AppLayout({ children }) {
 }
 
 function AppRoutes() {
+  const location = useLocation();
+
   return (
-    <Routes>
-      <Route path="/"                element={<LandingPage />} />
-      <Route path="/login"           element={<Auth />} />
-      <Route path="/register"        element={<Auth />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password"  element={<ResetPassword />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/"                element={<PageTransition><LandingPage /></PageTransition>} />
+        <Route path="/login"           element={<PageTransition><Auth /></PageTransition>} />
+        <Route path="/register"        element={<PageTransition><Auth /></PageTransition>} />
+        <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+        <Route path="/reset-password"  element={<PageTransition><ResetPassword /></PageTransition>} />
 
-      <Route path="/*" element={
-        <PrivateRoute>
-          <AppLayout>
-            <Routes>
-              <Route path="dashboard"     element={<Dashboard />} />
-              <Route path="profile"       element={<Profile />} />
+        <Route path="/*" element={
+          <PrivateRoute>
+            <AppLayout>
+              <AnimatePresence mode="wait">
+                <Routes location={location} key={location.pathname}>
+                  <Route path="dashboard"     element={<PageTransition><Dashboard /></PageTransition>} />
+                  <Route path="profile"       element={<PageTransition><Profile /></PageTransition>} />
 
-              <Route path="products"      element={<ProductList />} />
-              <Route path="products/new"  element={<ProductForm />} />
-              <Route path="products/:id/edit" element={<ProductForm />} />
-              <Route path="products/:id"  element={<ProductDetail />} />
-              <Route path="products/:id/history"  element={<ProductHistory />} />
-              <Route path="products/:id/compare"  element={<ProductCompare />} />
-              <Route path="products/:id/blame"    element={<ProductBlame />} />
-              <Route path="products/:id/rollback" element={<ProductRollback />} />
+                  <Route path="products"      element={<PageTransition><ProductList /></PageTransition>} />
+                  <Route path="products/new"  element={<PageTransition><ProductForm /></PageTransition>} />
+                  <Route path="products/:id/edit" element={<PageTransition><ProductForm /></PageTransition>} />
+                  <Route path="products/:id"  element={<PageTransition><ProductDetail /></PageTransition>} />
+                  <Route path="products/:id/history"  element={<PageTransition><ProductHistory /></PageTransition>} />
+                  <Route path="products/:id/compare"  element={<PageTransition><ProductCompare /></PageTransition>} />
+                  <Route path="products/:id/blame"    element={<PageTransition><ProductBlame /></PageTransition>} />
+                  <Route path="products/:id/rollback" element={<PageTransition><ProductRollback /></PageTransition>} />
 
-              <Route path="boms"          element={<BOMList />} />
-              <Route path="boms/new"      element={<BOMForm />} />
-              <Route path="boms/:id/edit" element={<BOMForm />} />
-              <Route path="boms/:id"      element={<BOMDetail />} />
-              <Route path="boms/:id/history"  element={<BOMHistory />} />
-              <Route path="boms/:id/compare"  element={<BOMCompare />} />
-              <Route path="boms/:id/blame"    element={<BOMBlame />} />
-              <Route path="boms/:id/rollback" element={<BOMRollback />} />
+                  <Route path="boms"          element={<PageTransition><BOMList /></PageTransition>} />
+                  <Route path="boms/new"      element={<PageTransition><BOMForm /></PageTransition>} />
+                  <Route path="boms/:id/edit" element={<PageTransition><BOMForm /></PageTransition>} />
+                  <Route path="boms/:id"      element={<PageTransition><BOMDetail /></PageTransition>} />
+                  <Route path="boms/:id/history"  element={<PageTransition><BOMHistory /></PageTransition>} />
+                  <Route path="boms/:id/compare"  element={<PageTransition><BOMCompare /></PageTransition>} />
+                  <Route path="boms/:id/blame"    element={<PageTransition><BOMBlame /></PageTransition>} />
+                  <Route path="boms/:id/rollback" element={<PageTransition><BOMRollback /></PageTransition>} />
 
-              <Route path="ecos"          element={<ECOList />} />
-              <Route path="ecos/new"      element={<ECOForm />} />
-              <Route path="ecos/:id"      element={<ECODetail />} />
-              <Route path="ecos/:id/edit-product" element={<ECODraftProduct />} />
-              <Route path="ecos/:id/edit-bom"     element={<ECODraftBOM />} />
+                  <Route path="ecos"          element={<PageTransition><ECOList /></PageTransition>} />
+                  <Route path="ecos/new"      element={<PageTransition><ECOForm /></PageTransition>} />
+                  <Route path="ecos/:id"      element={<PageTransition><ECODetail /></PageTransition>} />
+                  <Route path="ecos/:id/edit-product" element={<PageTransition><ECODraftProduct /></PageTransition>} />
+                  <Route path="ecos/:id/edit-bom"     element={<PageTransition><ECODraftBOM /></PageTransition>} />
 
-              <Route path="reports"       element={<ReportsPage />} />
-              <Route path="settings"      element={<SettingsPage />} />
-              <Route path="audit"         element={<AuditPage />} />
+                  <Route path="reports"       element={<PageTransition><ReportsPage /></PageTransition>} />
+                  <Route path="settings"      element={<PageTransition><SettingsPage /></PageTransition>} />
+                  <Route path="audit"         element={<PageTransition><AuditPage /></PageTransition>} />
 
-              <Route path="/"              element={<Navigate to="/dashboard" replace />} />
-              <Route path="*"              element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </AppLayout>
-        </PrivateRoute>
-      } />
-    </Routes>
+                  <Route path="/"              element={<Navigate to="/dashboard" replace />} />
+                  <Route path="*"              element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </AnimatePresence>
+            </AppLayout>
+          </PrivateRoute>
+        } />
+      </Routes>
+    </AnimatePresence>
   );
 }
 

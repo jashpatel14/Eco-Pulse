@@ -3,7 +3,7 @@
    Inspired by clean SaaS dashboard design
    ===================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   /* Premium Modern Mint Palette */
@@ -52,16 +52,60 @@
   
   /* Transitions */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --ts: 0.4s var(--ease);
+  --ts: 0.3s var(--ease);
+  --ts-fast: 0.15s ease-out;
 
-  /* Radius */
+  /* Shimmer effect */
+  --shimmer-bg: linear-gradient(90deg, 
+    hsla(var(--h), 10%, 95%, 0) 0%, 
+    hsla(var(--h), 10%, 95%, 0.8) 50%, 
+    hsla(var(--h), 10%, 95%, 0) 100%
+  );
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--shimmer-bg);
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
 }
 
 /* ─── Reset ─────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
   background: var(--bg-page);
   color: var(--text-main);
   line-height: 1.55;
@@ -70,7 +114,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
+h1,h2,h3,h4,.brand-text { font-family: 'Poppins', sans-serif; }
 
 /* ─── Scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -91,7 +135,7 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   border: none;
   outline: none;
   transition: all var(--transition-fast);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .btn-primary {
@@ -200,12 +244,20 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
 }
 
 .btn-back-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px !important;
   border: 1px solid var(--border-medium) !important;
   box-shadow: var(--shadow-sm) !important;
   background: white !important;
   color: var(--text-main) !important;
   border-radius: 99px !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
   transition: all var(--ts) !important;
+  width: fit-content !important;
+  margin-bottom: 12px;
 }
 
 .btn-back-modern:hover {
@@ -243,7 +295,7 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   margin-bottom: 12px;
 }
 .sidebar-logo { font-size: 1.3rem; }
-.sidebar-brand-name { font-family: 'Outfit',sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+.sidebar-brand-name { font-family: 'Poppins', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
 
 .sidebar-search {
   margin: 0 14px 16px;
@@ -343,7 +395,7 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   display: flex; align-items: flex-start; justify-content: space-between;
   margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
 }
-.page-header-left { display: flex; flex-direction: column; }
+.page-header-left { display: flex; flex-direction: column; align-items: flex-start; }
 .page-title { font-size: 1.6rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.02em; }
 .page-desc  { color: var(--text-muted); font-size: 0.88rem; margin-top: 3px; }
 .page-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -353,13 +405,40 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   padding: 32px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   transition: all var(--ts);
   position: relative;
 }
 
 .glass-card:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  border-color: var(--brand);
+}
+
+.plm-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-input);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all var(--ts-fast);
+  outline: none;
+}
+
+.plm-input:focus {
+  border-color: var(--brand);
+  background: white;
+  box-shadow: 0 0 0 4px var(--brand-glow), var(--shadow-sm);
+}
+
+.plm-input.error {
+  border-color: #ef4444;
+  background: #fffcfc;
+  animation: shake 0.3s ease-in-out;
 }
 
 /* ─── Detail Grid (Consistent Entity Views) ──────── */
@@ -655,7 +734,7 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
   border-radius: var(--radius-md); padding: 9px 14px;
   color: var(--text-main); font-size: 0.875rem; outline: none;
   transition: border-color var(--transition-fast);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 .search-input:focus { border-color: var(--brand); background: white; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
 .search-input::placeholder { color: var(--text-muted); }
@@ -697,7 +776,7 @@ h1,h2,h3,h4,.brand-text { font-family: 'Outfit', sans-serif; }
 .stat-value { 
   font-size: 2.25rem; 
   font-weight: 800; 
-  font-family: 'Outfit', sans-serif; 
+  font-family: 'Poppins', sans-serif; 
   color: var(--text-main); 
   letter-spacing: -0.04em; 
   line-height: 1;
